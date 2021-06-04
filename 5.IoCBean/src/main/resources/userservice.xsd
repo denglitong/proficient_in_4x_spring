@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- 扩展自定义标签（将组件进行标签化定义） -->
+<xsd:schema xmlns="http://www.denglitong.com/schema/service"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:beans="http://www.springframework.org/schema/beans"
+            targetNamespace="http://www.denglitong.com/schema/service"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified">
+    <!-- 导入 Spring 本身的 beans 命名空间 -->
+    <xsd:import namespace="http://www.springframework.org/schema/beans"/>
+    <!-- 定义了一个 user-service 标签 -->
+    <xsd:element name="user-service">
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="beans:identifiedType">
+                    <xsd:attribute name="dao" type="xsd:string" use="required"/>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+</xsd:schema>

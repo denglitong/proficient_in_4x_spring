@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd
+        ">
+
+    <!-- id 和 name 可以命名多个名字，用逗号或空格分隔 -->
+    <!--
+        bean 的 id 不允许相同，但是运行存在 name 相同的 bean
+        getBean(beanName) 将返回最后声明的那个 bean 因为后面会覆盖前面的
+        应尽量使用 id 命名的 bean
+        如果 id 和 name 都没指定，将使用 class 作为 bean 的名称
+        如果存在多个 class 相同的 bean，那么它们的名称按声明顺序依次为：
+        package.fullpath.Class
+        package.fullpath.Class#1
+        package.fullpath.Class#2
+        正如 Java 的匿名类一样
+    -->
+    <bean id="car" name="$car" class="com.denglitong.simple.Car">
+        <property name="brand">
+            <!-- 使用 <![CDATA[]]> 方式提供 raw string -->
+            <!-- XML 特殊字符：& < > " ' -->
+            <value><![CDATA[红旗&CA72]]></value>
+        </property>
+        <property name="color" value="红色"/>
+        <property name="maxSpeed" value="200"/>
+    </bean>
+
+    <!-- 采用 p 命名空间 -->
+    <bean id="car_p" class="com.denglitong.simple.Car"
+          p:brand="红旗 CA72"
+          p:color="红色"
+          p:maxSpeed="200"
+    />
+
+    <!--
+        此处是根据函数签名的入参类型来确定构造函数的，和 constructor-arg 声明的顺序无关
+        此时如果有 2 个相邻参数类型相同，Java 将区分不出对应 constructor-arg 对应哪个入参
+        此时需要使用索引匹配入参
+     -->
+    <bean id="car1" class="com.denglitong.simple.Car">
+        <constructor-arg type="java.lang.Integer" value="240"/>
+        <constructor-arg type="java.lang.String" value="黑色"/>
+        <constructor-arg type="java.lang.String" value="红旗 CA72"/>
+    </bean>
+    <!--
+        此时需要使用索引匹配入参（最好索引+类型进行无歧义入参匹配）
+     -->
+    <bean id="car2" class="com.denglitong.simple.Car">
+        <constructor-arg index="2" type="java.lang.Integer" value="240"/>
+        <constructor-arg index="1" type="java.lang.String" value="黑色"/>
+        <constructor-arg index="0" type="java.lang.String" value="红旗 CA72"/>
+    </bean>
+
+    <bean id="property" abstract="true" class="com.denglitong.simple.Property">
+        <property name="iDCode" value="070101"/>
+        <property name="list">
+            <list>
+                <value>看报</value>
+                <value>赛车</value>
+                <value>高尔夫</value>
+            </list>
+        </property>
+        <property name="set">
+            <set>
+                <value>1</value>
+                <value>2</value>
+                <value>3</value>
+                <value>2</value>
+            </set>
+        </property>
+        <property name="map">
+            <map>
+                <entry key="AM" value="会见客户"/>
+                <entry>
+                    <key>
+                        <value>PM</value>
+                    </key>
+                    <value>公司内部会议</value>
+                </entry>
+            </map>
+        </property>
+        <property name="properties">
+            <props>
+                <prop key="jobMail">deng.litong@foxmail.com</prop>
+                <prop key="lifeMail">1525619747@qq.com</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="childProperty" parent="property">
+        <property name="properties">
+            <props merge="true">
+                <prop key="jobMail">litongdeng@gmail.com</prop>
+                <prop key="eduMail">deng.litong@mail.scut.edu.cn</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!--
+        构造函数存在循环依赖问题，
+        报错信息：Is there an unresolvable circular reference?
+        解决办法：修改 Bean 代码，将构造函数注入改为属性注入即可
+     -->
+    <bean id="foo" class="com.denglitong.simple.Foo">
+        <!-- <constructor-arg index="0" ref="bar"/> -->
+        <property name="bar" ref="bar"/>
+    </bean>
+    <bean id="bar" class="com.denglitong.simple.Bar">
+        <!-- <constructor-arg index="0" ref="foo"/> -->
+        <!-- <property name="foo" ref="foo"/>-->
+        <property name="foo">
+            <ref bean="foo"/>
+            <!-- 给属性注入 null 值 -->
+            <!-- <null/>-->
+        </property>
+    </bean>
+    <bean id="bar_p" class="com.denglitong.simple.Bar"
+          p:foo-ref="foo"
+    />
+
+    <!-- 工厂类 Bean -->
+    <bean id="carFactory" class="com.denglitong.ditype.CarFactory"/>
+    <!-- 通过非静态工厂方法注入 -->
+    <bean id="car3" factory-bean="carFactory" factory-method="createHongQiCar"/>
+    <!-- 通过静态工厂方法注入 -->
+    <bean id="car4" class="com.denglitong.ditype.CarFactory" factory-method="createStaticHongQiCar"/>
+    <!-- 不推荐工厂方法注入，引入了额外的类和代码 -->
+
+    <!--
+        配置集合类型的 Bean, List<T>
+    -->
+    <util:list id="listStr" list-class="java.util.LinkedList" value-type="java.lang.String">
+        <value>看报</value>
+        <value>赛车</value>
+        <value>高尔夫</value>
+    </util:list>
+    <util:list id="listCar" list-class="java.util.LinkedList" value-type="com.denglitong.simple.Car">
+        <ref bean="car"/>
+        <ref bean="car1"/>
+        <ref bean="car2"/>
+        <ref bean="car3"/>
+        <ref bean="car4"/>
+    </util:list>
+    <util:map id="map" map-class="java.util.HashMap">
+        <entry key="AM" value="会见客户"/>
+        <entry key="PM" value-ref="car"/>
+    </util:map>
+
+    <bean id="car_prototype" class="com.denglitong.simple.Car"
+          p:brand="红旗 CA72"
+          p:maxSpeed="200"
+          scope="prototype"
+    />
+    <!-- 通过配置为该接口提供实现，让 getCar() 每次都返回新的 car bean -->
+    <bean id="magicBoss" class="com.denglitong.injectfunc.MagicBoss">
+        <lookup-method name="getCar" bean="car_prototype"/>
+    </bean>
+
+    <bean id="boss1_raw" class="com.denglitong.injectfunc.Boss1"/>
+    <bean id="boss1" class="com.denglitong.injectfunc.Boss1">
+        <!-- 使用 boss2 的 MethodReplacer 接口方法替换该 Bean 的 getCar() 方法 -->
+        <replaced-method name="getCar" replacer="boss2"/>
+    </bean>
+
+    <bean id="boss2" class="com.denglitong.injectfunc.Boss2"/>
+
+    <!-- bean 继承 -->
+    <bean id="car5" class="com.denglitong.simple.Car"
+          p:brand="红旗 CA72"
+          p:maxSpeed="200"
+          p:color="红色"
+    />
+    <bean id="car6" class="com.denglitong.simple.Car"
+          p:brand="红旗 CA72"
+          p:maxSpeed="200"
+          p:color="黑色"
+    />
+    <bean id="abstractCar" class="com.denglitong.simple.Car"
+          abstract="true"
+          p:brand="红旗 CA72"
+          p:maxSpeed="200"
+    />
+    <bean id="car7" class="com.denglitong.simple.Car"
+          parent="abstractCar"
+          p:color="白色"
+    />
+    <bean id="car8" class="com.denglitong.simple.Car"
+          parent="abstractCar"
+          p:color="红色"
+    />
+
+    <!-- depends-on 声明前置依赖的 Bean，多个用逗号、空格分隔 -->
+    <bean id="cacheManager" class="com.denglitong.conf.CacheManager"
+          depends-on="systemInit"
+    />
+    <bean id="systemInit" class="com.denglitong.conf.SystemInit"/>
+
+    <!-- 引用 bean 作为属性值 -->
+    <bean id="bar_ref" class="com.denglitong.simple.Bar">
+        <property name="foo" ref="foo"/>
+    </bean>
+</beans>

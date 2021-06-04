@@ -1,0 +1,2 @@
+# 告诉 Spring 描述自定义标签的文档结构文件所在的位置
+http\://www.denglitong.com/schema/service.xsd=userservice.xsd

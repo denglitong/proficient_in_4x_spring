@@ -187,7 +187,7 @@ Spring 的自动依赖注入建立在 Java 的反射基础之上。
 
 Java 允许用户借助与 Class 相关的元信息对象间接调用 Class 对象的功能。
 
-#### 类转载器 ClassLoader
+#### 类装载器 ClassLoader
 
 1. 类转载器器的工作机制
 
@@ -340,3 +340,69 @@ ApplicationContext 和 BeanFactory 另一个最大的不同之处在于：前者
 
 Spring 为 Bean 提供了细致周全的生命周期过程，通过实现特定的接口或通过 <bean> (beans.xml 文件)属性设置，  
 都可以对 Bean 的生命周期过程施加影响。为了让 Bean 绑定 Spring 框架，推荐使用配置方式（<bean>）而非接口方式。
+
+## 在 IoC容器中装配 Bean
+
+要使应用程序中的 Spring 容器成功启动，需同时具备以下三方面的条件：
+
+- Spring 框架的类包都已经放到应用程序的类路径下
+- Bean 的类都已经放到应用程序的类路径下
+- 应用程序为 Spring 提供了完备的 Bean 配置信息
+
+Bean 配置信息是 Bean 的元数据信息，由 4 个方面组成：
+
+- Bean 的实现类
+- Bean 的属性信息
+- Bean 的依赖关系，Spring 根据依赖关系配置完成 Bean 之间的装配
+- Bean 的行为配置，如生命周期范围及生命周期各过程的回调函数等
+
+Bean 元数据信息在 Spring 容器中的内部对应实体是一个个 BeanDefinition（形成 Bean 注册表）,  
+Spring 实现了 Bean 元数据信息内部表示和外部定义的解耦。
+
+Spring 支持多种形式的 Bean 配置方式：
+
+- Spring 1.0 仅支持基于 XML 的配置（<bean>）
+- Spring 2.0 新增基于注解配置（@Autowire）的支持
+- Spring 3.0 新增基于 Java 类配置（@Configuration）的支持
+- Spring 4.0 新增基于 Groovy动态语言配置（groovy beans）的支持
+
+不同的 Bean 配置形式本质上是基本相同的，基于 XML 的配置方式是最基础、最传统的。
+
+### 循环依赖问题
+
+将<bean>中的构造函数注入改为属性注入。
+
+### Bean 作用域（scope）
+
+- singleton  
+  在 Spring IoC 容器中仅存在一个 Bean 实例，Bean 以单实例的方式存在。  
+  无状态或状态不可变的类适合使用单例模式。  
+  Spring 的 DAO 类都采用了单例模式，这是因为 Spring 利用 AOP 和 LocalThread 功能，  
+  对非线程安全的变量/状态进行了特殊处理，使得这些非线程安全的类编程了线程安全的类。  
+  也因为 AOP+LocalThread，Spring 中的大部分 Bean 都能以单实例的方式运行，  
+  所以 scope 的默认值为 singleton.  
+  默认情况下，Spring 的 AppilcationContext 容器在启动时，  
+  自动实例化所有 singleton 的 Bean并缓存在容器中。
+- prototype  
+  每次从容器中调用 Bean 时，都返回一个新的实例，即相当于每次 getBean() 都执行 new XxBean()。  
+  Spring 容器将 prototype 的 Bean 交给调用者后，就不再管理它的生命周期。
+- request  
+  每次 HTTP 请求都会创建一个新的 Bean，该作用域仅适用于 WebApplicationContext 环境
+- session  
+  同一个 HTTP Session 共享一个 Bean，不同的 HTTP Session 使用不同的 Bean, 该作用域仅适用于 WebApplicationContext 环境
+- globalSession  
+  顾名思义，全局 Session 共享一个 Bean，该作用域仅适用于 WebApplicationContext 环境，一般用于 Portlet 应用
+
+### 自动装配 Bean（使用@Autowire自动注入）
+
+Spring 可通过 @Autowire 注解自动实现 Bean 的依赖注入。
+
+- @Autowire 可使用在属性、方法、方法参数上，默认按 byType 匹配，可结合 @Qualifier 指定 beanName
+- 对集合类进行 @Autowire 标注，那么 Spring 会将容器中匹配的所有 Bean 都自动注入进来
+- @Lazy 延迟依赖注入，延迟到调用次属性的时候才会注入属性值，需要在属性及目标 Bean 上同时标注
+- @Resource 注解要求提供一个 Bean 名称的属性，缺省值为标注处的变量名或方法名；即 @Autowired 默认 byType 注入，  
+  @Resource 按 byName 注入。不管是 @Resource 还是 @Inject，功能都没有 @Autowired 丰富。
+
+一般采用 XML 配置 DataSource、SessionFactory 等资源 Bean.  
+在 XML 中利用 aop, context 命名空间进行相关主题的配置。  
+其他在项目中开发的 Bean 都通过基于注解配置的方式进行配置；很少采用基于 Java 类的配置方式。
