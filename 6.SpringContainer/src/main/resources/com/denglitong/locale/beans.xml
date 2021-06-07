@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="myResource" class="org.springframework.context.support.ResourceBundleMessageSource">
+        <!-- 通过基名指定资源，相对于根路径 -->
+        <property name="basenames">
+            <list>
+                <!-- classpath:resource_<语言代码>_<国家/地区代码>.properties -->
+                <value>resource</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="myResource1" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <!-- classpath:resource_<语言代码>_<国家/地区代码>.properties -->
+                <value>resource</value>
+            </list>
+        </property>
+        <!-- 刷新资源文件的周期 -->
+        <property name="cacheSeconds" value="60"/>
+    </bean>
+</beans>

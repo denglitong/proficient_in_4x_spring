@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.denglitong"/>
+
+    <!-- 配置自动注册属性编辑器 -->
+    <!-- 按照 JavaBean 规范，JavaBean 的基础设施会在 JavaBean 的相同类包下
+     查找是否存在<JavaBean>Editor 的规范类，
+     如果有则自动使用 <JavaBean>Editor 作为该 JavaBean 的 PropertyEditor
+     所以，下面这段配置注释掉也不影响 -->
+    <bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">
+        <property name="customEditors">
+            <map>
+                <!-- 属性编辑器对应的属性类型 -->
+                <entry key="com.denglitong.editor.Car"
+                       value="com.denglitong.editor.CarEditor"/>
+            </map>
+        </property>
+    </bean>
+
+    <!-- p:location 引入 jdbc.properties 属性文件 -->
+    <!-- <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" -->
+    <!-- 使用扩展后的 PropertyPlaceholderConfigurer 覆写 convertProperty 方法对配置文件中的加密配置项在内存里解密后赋值 -->
+    <bean class="com.denglitong.placeholder.EncryptPropertyPlaceholderConfigurer"
+          p:location="classpath:jdbc.properties"
+          p:fileEncoding="utf-8"/>
+
+    <bean id="boss" class="com.denglitong.editor.Boss">
+        <property name="name" value="John"/>
+        <property name="car" value="红旗 CA72,红色,200"/>
+    </bean>
+
+    <!-- 定义一个使用 DBCP 实现的数据源 -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+          destroy-method="close"
+          p:driverClassName="${driverClassName}"
+          p:url="${url}"
+          p:username="${userName}"
+          p:password="${password}"/>
+    <!-- 定义 jdbcTemplate bean -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate"
+          p:dataSource-ref="dataSource"/>
+
+    <!-- 通过 initFromDB 方法从数据源中获取配置值 -->
+    <bean id="systemConfig" class="com.denglitong.beanproperty.SystemConfig"
+          p:jdbcTemplate-ref="jdbcTemplate"
+          init-method="initFromDB"/>
+
+    <!-- 应用 bean 中的属性值 -->
+    <bean id="applicationManager" class="com.denglitong.beanproperty.ApplicationManager"
+          p:sessionTimeout="#{systemConfig.sessionTimeout}"/>
+
+</beans>

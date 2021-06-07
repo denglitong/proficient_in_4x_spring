@@ -406,3 +406,154 @@ Spring 可通过 @Autowire 注解自动实现 Bean 的依赖注入。
 一般采用 XML 配置 DataSource、SessionFactory 等资源 Bean.  
 在 XML 中利用 aop, context 命名空间进行相关主题的配置。  
 其他在项目中开发的 Bean 都通过基于注解配置的方式进行配置；很少采用基于 Java 类的配置方式。
+
+## Spring 容器高级主题
+
+Spring 容器就像一台构造精妙的机器，我们通过配置文件向机器传达控制信息，机器就能按照设定的模式工作。
+
+### SpringContext 的内部工作机制
+
+    // 1.初始化 BeanFactory 
+    //   Spring 将配置文件装载（ResourceLoader）入容器的 Bean 定义注册表（BeanDefinitionRegistry），
+    //   此时 Bean 还未初始化  
+    ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+    // 2.调用工厂后处理器
+    //   根据反射机制从 BeanDefinitionRegistry 中找出所有实现了 BeanFactoryPostProcessor 接口的 Bean  
+    //   并调用其 postProcessBeanFactory() 接口方法
+    invokeBeanFactoryPostProcessors();
+    
+    // 3.注册 Bean 后处理器
+    //   根据反射机制从 BeanDifinitionRegistry 中找出所有实现了 BeanPostProcessor 接口的 Bean，  
+    //   并将它们注册到容器 Bean 后处理器的注册表中
+    // registerBeanPostProcessors();
+
+    // 4.初始化消息源（初始化容器的国际化消息资源）
+    initMessageSource();
+
+    // 5.初始化应用上下文事件广播器
+    initApplicationEventMulticaster();
+
+    // 6.初始化其他特殊的 Bean  
+    //   这是一个钩子方法，由具体子类实现执行一些特殊的操作
+    onRefresh();
+
+    // 7.注册事件监听器
+    registerListerners();
+
+    // 8.初始化所有单实例的 Bean（并放入缓存池中），使用懒加载模式的 Bean 除外
+    finishBeanFactoryInitiliaztion(beanFactory);
+
+    // 9.发布上下文刷新事件
+    //   事件广播器负责将这些事件广播到每个注册的事件监听器中
+    finishRefresh();
+
+#### Spring 容器的设计优点之处：
+
+1. 接口层描述了容器的重要组件及组件间的协作关系
+2. 继承体系逐步实现组件的各项功能
+
+接口层勾勒出了 Spring框架的高层功能、框架，同时使用接口层保证了框架的扩展性，在实现上  
+使用继承体系，逐步扩展、分步骤实现框架功能，保证了代码不会堆积在某些类上，完美地分解了  
+框架的复杂度。
+
+#### Spring 组件按其所承担的橘色可划分为 2 类
+
+1. 物料组件  
+   Resource、BeanDefinition、PropertyEditor 及最终的 Bean 等，它们是加工流程中  
+   被加工、被消费的组件。
+2. 设备组件  
+   ResourceLoader、BeanDefinitionReader、BeanFactoryPostProcessor、  
+   InstantiationStrategy 及 BeanWrapper 等。它们就像流水线上不同设备的加工设备，  
+   对物料组件进行加工处理。
+
+### 使用外部属性文件
+
+在进行数据源或邮件服务器等资源的配置时，用户可直接在 Spring 配置文件中配置用户名/密码、链接地址等信息。  
+但一种更好的做法是将这些配置信息独立到一个外部属性文件中，并在 Spring 配置文件中通过形如 ${user}、  
+${password} 的占位符引用属性文件中的属性项。这种配置方式有 2 个明显的好处：
+
+- 减少维护的工作量  
+  在资源的配置信息被多个应用共享时就体现出来了
+- 使部署更简单  
+  Spring 配置文件主要描述应用工程中的 Bean，这些配置在开发完成后就基本确定下来了。  
+  但数据源、邮件服务器等资源配置信息却需要在部署时根据现场确定，如果通过一个独立的属性文件  
+  放这些配置信息，则部署人员只需调整这个属性文件即可，根本不需要关注大量的 Spring 配置文件。  
+  这不仅给部署和维护带来了方便，也降低了出错的概率。
+
+Spring 提供了一个 PropertyPlaceholderConfigurer，它能使 Bean 在配置时引用外部属性文件，  
+是一个 Bean 工厂后处理器（BeanFactoryPostProcessor）。
+
+### 使用解密的属性文件
+
+对于一些安全要求特别高的应用系统来说，要求对应用程序配置文件的某些属性进行加密，让 Spring 容器  
+在读取属性文件后，在内存中对属性进行解密，然后再将解密后的属性值赋给目标对象。
+
+PropertyPlaceholderConfigurer 继承自 PropertyResourceConfigurer 类，其中的 protected  
+方法 convertProperties/convertProperty/convertPropertyValue 用于在属性使用之前对属性列表  
+中的属性值进行转换，可扩展 PropertyPlaceholderConfigurer 覆写这几个方法，实现配置文件属性加密。
+
+### 引用 Bean 的属性值
+
+将应用系统的配置信息放在配置文件中并非总是最适合的，如果应用系统以集群方式部署、或希望在运行期动态调整  
+应用系统中的某些配置，此时更适合的方式是放到数据库中，可有效增强应用系统的可维护性。
+
+自 Spring 3.0 起，可通过 #{beanName.beanProperty} 方式引用另一个 Bean 的属性值。  
+在基于注解和基于 Java 类配置的 Bean 中，可通过 @Value("#{beanName.propertyName})   
+的注解形式引用 Bean 的属性值。
+
+### 国际化信息
+
+有国际化要求的应用系统，需要为每种语言提供一套相应的资源文件，并以规范化的方式保存在特定的目录中，  
+由系统自动根据客户端语言选择适合的资源文件。国际化资源文件的规范命名为：
+
+    <资源名>_<语言代码>_<国家/地区代码>.properties  
+    其中 <语言代码>_<国家/地区代码> 是可选的，如果没有就应用默认的 <资源名>.properties 文件  
+
+"国际化信息"也称"本地化信息"，一般需要 2 个信息才能确定，分别是"语言类型"和"国家/地区类型"。  
+Java 通过 java.util.Locale 类表示一个本地化对象，允许通过语言参数和国家/地区参数创建一个  
+确定的本地化对象。
+
+- 语言参数  
+  使用 ISO 标准语言代码表示，每种语言由 2 位小写字母表示。  
+  参见：http://www.loc.gov/standards/iso639-2/php/English_list.php
+- 国家/地区参数  
+  由标准的 ISO 国家/地区代码表示，每个国家/地区由 2 个大写字母表示。    
+  参见：https://www.iso.org/obp/ui/#search
+
+ResourceBundle、MessageSource 用于方便地访问资源文件。  
+`ResourceBundleMessageSource`、`ReloadableResourceBundleMessageSource`
+
+ApplicationContext 也实现了 MessageSource 接口，支持容器级的国际化信息支持。  
+在 <bean> 中配置 messageResource bean 信息声明 property.beannames 指定  
+国际化信息资源文件，即可使用 ApplicationContext.getMessage(key, locale);  
+获取对应的国际化信息。
+
+### 容器事件
+
+Java 通过 java.util.EventObject 类和 java.util.EventListener 接口描述事件和监听器，  
+某个组件或框架如需事件发布和监听机制，都需要通过扩展它们进行定义。Spring 的 ApplicationContext  
+能够发布事件并且运行注册相应的事件监听器，因此它拥有一套完善的事件发布和监听机制。
+
+- 事件：EventObject
+- 监听器：EventListener
+- 事件源：事件的产生者，每一个 EventObject 都必须拥有一个事件源
+- 事件监听器注册表：EventListenerTable，组件或框架必须提供一个地方保存事件监听器，这就是  
+  事件监听器注册表
+- 事件广播器：它是事件和事件监听器沟通的桥梁，负责把事件通知给事件监听器
+
+事件体系是观察者模式的一种具体实现，它并没有任何神秘之处。
+
+#### Spring 事件类结构
+
+1. 事件类  
+   ApplicationEvent, ApplicationContextEvent, RequestHandledEvent.
+2. 事件监听器接口  
+   EventListener, ApplicationListener, SmartApplicationListener, GenericApplicationListener.
+
+        Spring4.0提供了一个可解析类型 ResolvableType 支持类，提供更加简单易用的泛型操作。
+
+3. 事件广播器    
+   ApplicationEventMulticaster, AbstractApplicationEventMulticaster（完成了事件体系的搭建）,  
+   SimpleApplicationEventMulticaster. Spring 启动过程中会通过反射机制将任何实现了 ApplicationEventMulticaster  
+   的类注册成容器的事件广播器，如果没找到外部配置可用的类，则默认使用 SimpleApplicationEventMulticaster 作为事件广播器。  

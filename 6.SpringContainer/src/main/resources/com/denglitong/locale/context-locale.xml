@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--
+        容器级的国际化信息，
+        ApplicationContext 也实现了 MessageResource,
+        在容器初始化过程中的 initMessageResource() 函数中自动注入规范命名的 bean
+    -->
+    <!-- 注册资源 Bean，其 Bean 名称只能为 messageResource（对应 MessageResource type） -->
+    <bean id="messageSource"
+          class="org.springframework.context.support.ResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <!-- classpath:resource_<语言代码>_<国家/地区代码>.properties -->
+                <value>resource</value>
+            </list>
+        </property>
+    </bean>
+
+</beans>
