@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="waiter" class="com.denglitong.advisor.Waiter"/>
+    <bean id="seller" class="com.denglitong.advisor.Seller"/>
+    <bean id="manager" class="com.denglitong.advisor.Manager"/>
+    <bean id="greetingBeforeAdvice" class="com.denglitong.advisor.GreetingBeforeAdvice"/>
+    <bean id="regexpAdvisor" class="org.springframework.aop.support.RegexpMethodPointcutAdvisor"
+          p:patterns=".*greet.*"
+          p:advice-ref="greetingBeforeAdvice"/>
+
+    <!-- 自动扫描容器中的 Advisor，为其所匹配的 Bean 自动创建代理，
+         将 Advisor 应用于这些 Bean 上 -->
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"/>
+
+</beans>

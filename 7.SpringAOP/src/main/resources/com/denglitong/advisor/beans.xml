@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="waiterTarget" class="com.denglitong.advisor.Waiter"/>
+    <bean id="sellerTarget" class="com.denglitong.advisor.Seller"/>
+    <bean id="greetingBeforeAdvice" class="com.denglitong.advisor.GreetingBeforeAdvice"/>
+    <bean id="greetingAdvisor" class="com.denglitong.advisor.GreetingAdvisor"
+          p:advice-ref="greetingBeforeAdvice"/>
+
+    <!-- 通过一个父<bean>定义公共的配置信息 -->
+    <bean id="parent" abstract="true"
+          class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:interceptorNames="greetingAdvisor"
+          p:proxyTargetClass="true"/>
+    <bean id="waiter" parent="parent" p:target-ref="waiterTarget"/>
+    <bean id="seller" parent="parent" p:target-ref="sellerTarget"/>
+
+    <bean id="regexpAdvisor"
+          class="org.springframework.aop.support.RegexpMethodPointcutAdvisor"
+          p:advice-ref="greetingBeforeAdvice">
+        <!--用正则表达式定义目标类全限定方法名的匹配模式串-->
+        <property name="patterns">
+            <list>
+                <!--只匹配方法名-->
+                <value>.*greet.*</value>
+                <!--匹配类名+方法名-->
+                <!--<value>.*\.Waiter\..*greet.*</value>-->
+            </list>
+        </property>
+    </bean>
+    <bean id="waiter1" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:interceptorNames="regexpAdvisor"
+          p:target-ref="waiterTarget"
+          p:proxyTargetClass="true"/>
+    <bean id="seller1" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:interceptorNames="regexpAdvisor"
+          p:target-ref="sellerTarget"
+          p:proxyTargetClass="true"/>
+
+    <bean id="dynamicAdvisor" class="org.springframework.aop.support.DefaultPointcutAdvisor">
+        <property name="pointcut">
+            <bean class="com.denglitong.advisor.GreetingDynamicPointcut"/>
+        </property>
+        <property name="advice" ref="greetingBeforeAdvice"/>
+    </bean>
+    <bean id="waiter2" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:interceptorNames="dynamicAdvisor"
+          p:target-ref="waiterTarget"
+          p:proxyTargetClass="true"/>
+
+    <bean id="controlFlowPointcut"
+          class="org.springframework.aop.support.ControlFlowPointcut">
+        <constructor-arg type="java.lang.Class" value="com.denglitong.advisor.WaiterDelegate"/>
+        <constructor-arg type="java.lang.String" value="service"/>
+    </bean>
+    <bean id="controlFlowAdvisor"
+          class="org.springframework.aop.support.DefaultPointcutAdvisor"
+          p:pointcut-ref="controlFlowPointcut"
+          p:advice-ref="greetingBeforeAdvice"/>
+    <bean id="waiter3" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:interceptorNames="controlFlowAdvisor"
+          p:target-ref="waiterTarget"
+          p:proxyTargetClass="true"/>
+
+    <bean id="greetingComposablePointcut" class="com.denglitong.advisor.GreetingComposablePointcut"/>
+    <bean id="composableAdvisor" class="org.springframework.aop.support.DefaultPointcutAdvisor"
+          p:pointcut="#{greetingComposablePointcut.intersectionPointcut}"
+          p:advice-ref="greetingBeforeAdvice"/>
+    <bean id="waiter4" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:interceptorNames="composableAdvisor"
+          p:target-ref="waiterTarget"
+          p:proxyTargetClass="true"/>
+
+    <bean id="introduceAdvisor" class="org.springframework.aop.support.DefaultIntroductionAdvisor">
+        <constructor-arg>
+            <bean class="com.denglitong.introduce.ControllablePerformanceMonitor"/>
+        </constructor-arg>
+    </bean>
+    <bean id="forumServiceTarget" class="com.denglitong.introduce.ForumService"/>
+    <bean id="forumService" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:interceptorNames="introduceAdvisor"
+          p:target-ref="forumServiceTarget"
+          p:proxyTargetClass="true"/>
+</beans>

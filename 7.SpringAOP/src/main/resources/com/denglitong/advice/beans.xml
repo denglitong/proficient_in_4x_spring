@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="greetingBeforeAdvice" class="com.denglitong.advice.GreetingBeforeAdvice"/>
+    <bean id="greetingAfterAdvice" class="com.denglitong.advice.GreetingAfterAdvice"/>
+    <bean id="greetingInterceptor" class="com.denglitong.advice.GreetingInterceptor"/>
+    <bean id="target" class="com.denglitong.advice.NaiveWaiter"/>
+    <!-- proxyInterfaces: 指定代理接口，如果有多个需要在<bean>元素内使用 list 元素 -->
+    <!-- target-ref: 代理的目标对象类 -->
+    <!-- interceptorNames: 需要织入目标对象的增强 Bean 列表，采用 Bean 名称指定
+         interceptorNames 是 String[] 类型的，它接收增强 Bean 的名称而非增强 Bean 的实例
+         这是因为 ProxyBeanFactory 内部在生成代理类时，需要使用增强 Bean 的类，而非增强 Bean 的实例
+         可以说增强是类级别的 -->
+    <bean id="waiter" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:proxyInterfaces="com.denglitong.advice.Waiter"
+          p:target-ref="target"
+          p:optimize="true">
+        <!-- 对于属性是 String[] 且元素是 Bean 名称的配置，最后使用 idref 标签，让 IDE 及时发现配置错误并给出报警 -->
+        <property name="interceptorNames">
+            <list>
+                <idref bean="greetingBeforeAdvice"/>
+                <idref bean="greetingAfterAdvice"/>
+            </list>
+        </property>
+        <!--简化的配置（但是没有 IDE 的及时检测拼写是否有误）-->
+        <!--<property name="interceptorNames" value="greetingBeforeAdvice,greetingAfterAdvice"/>-->
+    </bean>
+    <bean id="waiter1" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:target-ref="target"
+          p:proxyInterfaces="com.denglitong.advice.Waiter"
+          p:interceptorNames="greetingInterceptor"/>
+
+    <bean id="transactionThrowsAdvice" class="com.denglitong.advice.TransactionThrowsAdvice"/>
+    <bean id="forumServiceTarget" class="com.denglitong.advice.ForumService"/>
+    <bean id="forumService" class="org.springframework.aop.framework.ProxyFactoryBean"
+          p:target-ref="forumServiceTarget"
+          p:interceptorNames="transactionThrowsAdvice"
+          p:proxyTargetClass="true"/>
+</beans>

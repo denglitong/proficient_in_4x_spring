@@ -556,4 +556,221 @@ Java 通过 java.util.EventObject 类和 java.util.EventListener 接口描述事
 3. 事件广播器    
    ApplicationEventMulticaster, AbstractApplicationEventMulticaster（完成了事件体系的搭建）,  
    SimpleApplicationEventMulticaster. Spring 启动过程中会通过反射机制将任何实现了 ApplicationEventMulticaster  
-   的类注册成容器的事件广播器，如果没找到外部配置可用的类，则默认使用 SimpleApplicationEventMulticaster 作为事件广播器。  
+   的类注册成容器的事件广播器，如果没找到外部配置可用的类，则默认使用 SimpleApplicationEventMulticaster 作为事件广播器。
+
+## Spring AOP基础
+
+### AOP 概述（Aspect Oriented Programming，面向切面编程）
+
+Spring AOP 构建于 IoC 之上，和 IoC "浑然天成"，统一于 Spring 容器之中。Spring AOP 是 AOP 技术在 Spring 中的  
+具体体现。
+
+编程语言的终极目标就是能以更自然、更灵活的方式模拟世界。AOP 是软件开发思想发展到一定阶段的产物，是 OOP 的有益补充。  
+AOP 是有特定的应用场景的，它只适合那些具有横切逻辑的应用场景，如性能检测、访问控制、事务管理及日志记录。
+
+OOP `纵向继承体系`，AOP `横向抽取机制`。
+
+#### AOP 术语
+
+- 连接点（Joinpoint）  
+  `特定点` 是程序执行的某个特定位置，如类开始初始化前/类初始化后、某个方法调用前/调用后/方法抛出异常后等，  
+  一个类或一段程序代码拥有一些具有边界性质的`特定点`，这些代码中的`特定点`就被称为 `连接点`。Spring 仅支持  
+  方法的连接点，即仅能在方法调用前/调用后/方法抛出异常时及方法调用前后这些程序执行点织入增强。  
+  连接点由 2 个信息确定：一是用方法表示的程序执行点；而是用相对位置表示的方位（前/后）。  
+  Spring 使用`切点`对执行点进行定位，而方位则在增强类型中定义。
+
+- 切点（Pointcut）  
+  连接点是程序中客观存在的实体，如一个拥有 2 个方法的类，这 2 个方法都是连接点。在众多的连接点中，AOP 通过  
+  `切点`来定位感兴趣的连接点。Spring 通过 org.springframework.aop.Pointcut 接口描述切点，它使用类和  
+  方法作为执行点的查询条件，Spring AOP的规则引擎解析切点所设定的查询条件，找到执行点。
+
+- 增强（Advice）  
+  增强是织入目标类连接点上的一段程序代码，还拥有执行点的方位信息。结合切点信息和方位信息，就可以找到特定的连接。  
+  Spring 提供的增强接口都是带方位名的，如 BeforeAdvice, AfterReturnningAdvice, ThrowsAdvice 等。
+
+- 目标对象（Target）  
+  增强逻辑的织入目标类
+
+- 引介（Introduction）  
+  引介是一种特殊的增强，它为类增加一些属性和方法。这样即使一个业务类原本没有实现某个接口，通过 AOP 的引介功能，  
+  也可以动态地为该业务类添加接口的实现逻辑。
+
+- 织入（Weaving）  
+  织入是将增强添加到目标类的具体连接点上的过程。AOP 就像一台织布机，将目标类、增强或引介天衣无缝地编织到一起。  
+  AOP有 3 种织入方式：
+    1. 编译器织入：要求使用特殊的 Java 编译器
+    2. 类装载期织入：要求使用特殊的类装载器
+    3. 动态代理织入：在运行期为目标类添加增强生成子类的方式
+
+  Spring 采用动态代理织入，而 AspectJ 采用编译器织入和类装载期织入。
+
+- 代理（Proxy）  
+  一个类被 AOP 织入增强后就产生了一个结果类，它是融合了原类和增强逻辑的代理类。根据不同的代理方式，代理类既可能  
+  是和原类有相同接口的类，也可能就是原类的子类，所以可采用与调用原类相同的方式调用代理类。
+
+- 切面（Aspect）  
+  切面由切点和增强（/引介）组成，它既包含横切逻辑的定义，也包括连接点的定义。Spring AOP 就是负责实施切面的框架，  
+  它将切面所定义的横切逻辑织入切面所指定的连接点中。
+
+  AOP 的工作重心在于如何将增强应用于目标对象的连接点上，这包括：
+    1. 如何通过切点和增强定位到连接点上
+    2. 如何在增强中编写切面的代码
+
+#### AOP 的实现者
+
+AOP 工具的设计目标是把横切的问题（如性能监视、事务管理）模块化。使用类似 OOP 的方式进行切面的编程工作。  
+位于 AOP 工具核心的是连接点模型，它提供了一种机制，可以定位到需要在哪里发生横切。
+
+1. AspectJ AspectJ 是语言级的 AOP 实现，它扩展了 Java 语言，定义了 AOP 语法，能在编译期提供横切代码的织入，有一个专门的  
+   编译期来生成遵守 Java 字节码的 Class 文件。
+
+2. AspectWerkz  
+   它支持运行期或类装载期的横切织入，拥有一个特殊的类装载期。现在 AspectJ 和 AspectWerkz 已经合并。
+
+3. JBoss AOP
+
+4. Spring AOP  
+   Spring AOP 使用纯 Java 实现，它不需要专门的编译过程和特殊的类装载期，它在运行期通过代理方式向目标类织入增强代码。  
+   Spring AOP 侧重于提供一种和 Spring IoC 容器整合的 AOP 实现，可以无缝地将 Spring AOP、IoC 和 AspectJ 整合。
+
+### AOP 基础知识
+
+Spring AOP 使用了两种代理机制：一种是基于 JDK 的动态代理，另一种是基于 CGLib 的动态代理。之所以需要两种代理机制，  
+很大程度上是因为 JDK 本身只提供接口的代理，而不支持类的代理。
+
+#### JDK 动态代理
+
+自 Java1.3以后，Java 提供了动态代理技术，允许开发者在运行期创建接口的代理实例。  
+JDK 动态代理主要涉及 java.lang.reflect 包中的两个类：Proxy 和 InvocationHandler。
+
+使用 JDK 创建代理有一个限制：即它只能为接口创建代理实例。CGLib 采用底层的字节码技术，  
+可以为一个类创建子类，在子类中采用方法拦截的技术拦截所有父类方法的调用并顺势织入横切逻辑。  
+CGLib 主要涉及 org.springframework.cglib.proxy 包中的 MethodInterceptor 接口、  
+MethodProxy、Enhancer 类。
+
+    由于 CGLib 采用动态创建子类的方式生成代理对象，所有不能对目标中的 final或 private 方法进行处理。  
+
+#### Spring AOP
+
+Spring AOP 通过 Pointcut（切点）指定在哪些类的哪些方法上织入横切逻辑，通过 Advice（增强）描述  
+横切逻辑和方法的具体织入点（方法前、方法后、方法的两端等）。此外，Spring 通过 Advisor（切面）将  
+Pointcut 和 Advice 组装起来，这样有了 Advisor 的信息后 Spring 就可以利用 JDK 或 CGLib 动态  
+代理技术采用统一的方式为目标 Bean 创建织入切面的代理对象了。
+
+    JDK 动态代理所创建的代理对象运行性能比 CGLib 差（10 倍），但 CGLib 的代理对象所花费的时间比  
+    JDK 动态代理多（8 倍），所以，对于 Singleton 的代理对象或具有实例池的代理适合采用 CGLib   
+    动态代理技术，反之则适合采用 JDK 动态代理技术。  
+
+`ProxyFactory`是 Spring 提供的为目标类生成代理的工厂类，主要方法有`setTarget()`设置代理目标、  
+`addAdvice()`为代理目标添加增强、`getProxy()`生成代理实例。
+
+#### 前置增强
+
+`MethodBeforeAdvice`
+
+#### 后置增强
+
+`AfterReturningAdvice`
+
+#### 环绕增强
+
+`MethodInterceptor`
+
+#### 异常抛出增强
+
+`ThrowsAdvice`
+
+    标签接口是没有任何方法和属性的接口，它不对实现类有任何语义上的要求，仅仅表明它的实现类属于一个特定的类型。  
+    它非常类似于 Web2.0中 TAG 的概念，Java使用它表示某一类对象，主要有 2 个用途：  
+    第一，通过标签接口标识同一类型的类，这些类本身可能并不具有相同的方法；  
+    第二，通过标签接口使程序或 JVM 采取一些特殊处理，如 java.io.Serializable 接口，它告诉 JVM 对象可被序列化。  
+
+#### 引介增强
+
+`IntroductionInterceptor`（该接口没有任何方法，Spring 为其提供了 DelegatingIntroductionInterceptor 实现类）
+
+引介增强比较特殊，它不是在目标方法周围织入增强，而是为目标类创建新的方法和属性，所以引介增强的连接点是类  
+级别的。通过引介增强，可为目标类添加一个接口的实现（即创建某接口的代理）。
+
+    引介增强富有吸引力，因为它能够在横向上定义接口的实现方法，思考问题的角度发生了很大的变化。  
+
+在 Spring4.0 中，CGLib 的类代理不再要求目标类必须有无参构造函数，这是因为 Spring 内联了 objenesis  
+类库，其可以在不调用构造函数的情况下实例化类。
+
+### 创建切面
+
+描述连接点是 AOP 编程最主要的工作。增强提供了连接点的方位信息，而切点进一步描述了织入哪些类的哪些方法上。  
+Spring 通过 org.springframework.aop.Pointcut 接口描述切点，Pointcut 由 ClassFilter 和  
+MethodFilter 构成。Spring 支持注解切点和表达式切点。
+
+#### 静态普通方法名匹配切面
+
+`StaticMethodMatcherPointcutAdvisor`代表一个静态方法匹配切面，通过类过滤和方法名来匹配所定义的切点。
+
+#### 静态正则表达式匹配切面
+
+`RegexpMethodPointcutAdvisor`
+
+#### 动态切面
+
+    动态切面是指必须在运行期根据方法入参的值来判断增强是否需要织入目标类的连接点上。
+
+`DefaultPointcutAdvisor` + `DynamicMethodMatcherPointcut`
+
+DynamicMethodMatcherPointcut 是一个抽象类，它将 isRuntime() 标识为 final 且返回 true，这样其  
+子类就一定是一个动态切点。该抽象类默认匹配所有的类和方法，因此需要扩展该类编写符合要求的动态切点。
+
+由于动态切点检查对执行性能影响较大，Spring 在创建代理织入切面时，对目标类中的所有方法先进行静态切点检查，  
+后续每次调用时只对静态检查通过的方法再进行动态切点检查，缩小了动态检查的范围，尽量减少对不匹配方法的执行效率。
+
+#### 流程切面
+
+`DefaultPointcutAdvisor` + `ControlFlowPointcut`
+
+流程切点代表由某个方法直接或间接发起调用的其他方法。
+
+#### 复合切点
+
+有时候一个切点难以描述目标连接点的信息，比如需要一个切点来描述流程切点，还需要一个切点来描述目标方法切点。  
+此时就需要使用 Spring 提供的 `ComposablePointcut` 把两个切点组合起来。
+
+#### 引介切面
+
+`IntroductionAdvisor`，`DefaultIntroductionAdvisor`, `DeclaredParentsAdvisor`
+
+引介切面是引介增强的封装器，通过引介切面，可以更容易地为现有对象添加任何接口的实现。
+
+### 自动创建代理
+
+在前面所有的例子中，都需要通过 ProxyFactoryBean 创建织入切面的代理，每个需要被代理的 Bean 都需要使用  
+一个 ProxyFactoryBean 进行配置，这会很麻烦。Spring 基于 BeanPostProcessor 提供了自动代理机制，  
+让容器在实例化 Bean 的时候为匹配的 Bean 自动生成代理。这些代理创建器可分为 3 类：
+
+1. 基于 Bean 配置名规则的自动代理创建器：`BeanNameAutoProxyCreator`
+2. 基于 Advisor 匹配机制的自动代理创建器：`DefaultAdvisorAutoProxyCreator`，对容器中所有 Advisor  
+   进行扫描，对 Advisor 所匹配的 Bean 在其实例化的时候自动应用上这些切面
+3. 基于 Bean 中 AspectJ 注解标签的自动代理创建起：`AnnotationAwareAspectJAutoProxyCreator`，  
+   为包含 AspectJ 注解的 Bean 自动创建代理实例。
+
+#### AOP 无法增强疑难问题剖析
+
+AOP 底层实现有 2 种方法：一种基于 JDK 动态代理，另一种基于 CGLib 动态代理。  
+前者通过接口实现方法拦截，所以必须确保要拦截的目标方法在接口中有定义；后者通过  
+生成代理子类来实现方法拦截，所以必须确保要拦截的目标方法可悲子类访问。
+
+### 小结
+
+AOP 是 OOP 的延伸，它为程序开发提供了一个崭新的思考角度，可以将重复性的横切逻辑抽取到统一的模块中。  
+通过 OOP 的纵向抽象和 AOP 的横向抽取，程序可以更好地解决重复性代码问题。
+
+Spring 只能在方法级别上织入增强，Spring 提供了 4 中类型的方法增强，分别是：前置增强、后置增强、环绕增强  
+和异常抛出增强。此外还有一种特殊的引介增强，它为目标类织入新的接口实现，所以是类级别的。广义上来说，增强其实  
+就是一种最简单的切面，包括横切代码和方法相对位置信息，需要和切点联合去表示一个实用的切面。
+
+在 Spring 中，普通的切点通过目标类名和方法名描述连接点的信息。流程切点比较特殊，通过方法调用栈的运行信息来  
+决定连接点。可使用符合切点来对多个切点进行交叉确定一个最终的切点。
+
+切面是增强和切点的联合体，可通过 Spring 提供的 ProxyFactoryBean 方便地将切面织入不同的目标类中。  
+Spring 还提供了一些自动创建代理/织入切面的自动代理创建器，省去了为每个目标类配置切面的烦琐操作。  
+如 `DefaultAdvisorAutoProxyCreator` 就是功能强大的自动代理创建器，它将容器中所有的 Advisor 自动  
+织入目标 Bean 中。
