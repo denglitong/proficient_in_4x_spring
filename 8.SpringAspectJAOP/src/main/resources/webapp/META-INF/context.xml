@@ -1,0 +1,4 @@
+<Context path="/myWebApp" docBase="/my/webApp/location">
+    <Loader loaderClass="org.springframework.instrument.classloading.tomcat.TomcatLoadTimeWeaver"
+            useSystemClassLoaserAsParent="false"/>
+</Context>

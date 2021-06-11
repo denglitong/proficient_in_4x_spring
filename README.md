@@ -774,3 +774,177 @@ Spring 只能在方法级别上织入增强，Spring 提供了 4 中类型的方
 Spring 还提供了一些自动创建代理/织入切面的自动代理创建器，省去了为每个目标类配置切面的烦琐操作。  
 如 `DefaultAdvisorAutoProxyCreator` 就是功能强大的自动代理创建器，它将容器中所有的 Advisor 自动  
 织入目标 Bean 中。
+
+## 基于 @AspectJ 和 Schema 的 AOP
+
+### Java 注解（Annotation）
+
+注解是代码的附属信息，它遵循一个基本原则：注解不能直接干扰程序代码的执行。Java 语言解释器会忽略这些注解，  
+而由第三方工具负责对注解进行处理。第三方工具可利用注解间接地控制程序代码的运行，它们通过反射机制读取注解  
+的信息，并据此更改目标程序的逻辑。而这正是 Spring AOP 对@ AspectJ 所提供支持所采取的方法。
+
+Spring 在处理 @AspectJ 注解表达式时，需要将 Spring 的 asm 模块添加到类路径中。asm 模块是轻量级的  
+字节码处理框架，因为 Java的反射机制无法获取入参名而 asm 可以。
+
+### 使用 @AspectJ
+
+`@Aspect`, `@Before`, `AspectJProxyFactory`
+
+#### @AspectJ 切点表达式函数
+
+由于 Spring 只支持方法的连接点，所以 Spring 仅支持部分 AspectJ 的切点表达式。  
+根据描述对象的不同，大致分为 4 种类型：
+
+- 方法切点函数：通过描述目标类方法的信息定义切点
+    1. execution(方法匹配模式串) 满足匹配模式串的所有目标类方法连接点
+    2. @annotation(方法注解类名)标注了特定注解的目标类方法连接点
+- 方法入参切点函数：通过描述目标类方法入参的信息定义连接点
+    1. args(类名) 通过判别目标方法运行时入参对象的类型定义指定连接点
+    2. @args(类型注解类名) 通过判别目标方法运行时入参对象的类是否表示特定注解来指定连接点
+- 目标类切点函数：通过描述目标类的类型信息定义连接点
+    1. within(类名匹配模式串) 表示特定域下的所有连接点
+    2. target(类名) 目标类为类名所对应的类型及其子类的所有连接点都匹配该切点
+    3. @within(类型注解类名) 目标类为标注了注解的类及其子类的所有连接点都匹配该切点
+    4. @target(类型注解类名) 目标类为标注了注解的类的所有连接点都匹配该切点
+- 代理类切点函数：通过描述目标类的代理类的信息定义连接点
+    1. this(类名)
+
+##### 切点表达式函数举例
+
+1. execution(<修饰符模式>? <返回类型模式> <方法名模式>(<参数模式>) <异常模式>?)
+    - `execution(public * *(..))` 匹配所有目标类的 public 方法，第一个 \* 代表返回类型，  
+      第二个 \* 代表方法名，括号里的 .. 代表任意入参
+    - `execution(* *To(..))` 匹配目标类所有以 To 为后缀的方法，第一个 \* 代表返回类型，  
+      \*To 代表任意以 To 为后缀的方法
+    - `execution(* com.denglitong.Waiter.*(..))` 匹配 Waiter 接口的所有方法，第一个 \*  
+      代表任意返回类型，com.denglitong.Waiter.\* 代表 Waiter 接口中的所有方法
+    - `execution(* com.denglitong.Waiter+.*(..))` 匹配 Waiter 接口及其所有实现类的方法
+    - `execution(* com.denglitong.*(..))` 匹配 com.denglitong 包下所有类的所有方法
+    - `execution(* com.denglitong..*(..))` 匹配 com.denglitong 包、子孙包下所有类的所有方法
+    - `execution(* com..*.*Dao.find*(..))`匹配包名前缀为 com 的任何包下、类名后缀为 Dao 的、  
+      方法名前缀为 find 的所有方法
+    - `execution(* joke(String,int))` 匹配joke(String,int)方法
+    - `execution(* joke(String,*))` 匹配目标类中的 joke()方法，该方法第一个入参为 String，  
+      第二个入参可以是任意类型
+    - `execution(* joke(String,..))` 匹配目标类中的 joke() 方法，该方法第一个入参为 String,  
+      后续可以有任意个入参且入参类型不限
+    - `execution(* joke(Object+))` 匹配目标类中的 joke()方法，拥有一个入参，入参类型为 Object  
+      机器子类，如果是 joke(Object) 则入参只匹配 Object 而不匹配其子类
+
+2. args() 函数的入参是类名，而 @args() 函数的入参必须是注解类的类名
+    - `args(com.denglitong.Waiter)` 表示运行时入参是 Waiter 类型的方法，既匹配   
+      addWaiter(Waiter waiter)，又匹配 addNaiveWaiter(NaiveWaiter naiveWaiter)，  
+      等价于 execution(* com.denglitong.Waiter+)
+    - `@args(com.denglitong.Monitorable)` 在继承体系中，注解点的类，不能高于入参类型点；  
+      入参类型标注了@args()声明的注解，则入参类型及其子类都匹配切点
+
+3. within() 函数定义的连接点是针对目标类的，声明为接口毫无意义，其所指定的连接点最小范围只能是类，  
+   而 execution() 所制定的连接点可以从包、到类、到方法、方法入参，所有 execution() 函数的功能  
+   涵盖了 within() 函数的功能。  
+   `within(<类匹配模式>)`  
+   `within(com.denglitong.NaiveWaiter)` 匹配目标类 NaiveWaiter 的所有方法。
+
+4. `@target(M)` 匹配任意标注了 @M 的目标类，而 `@within(M)` 匹配标注了 @M 的类及子孙类  
+   NaiveWaiter 标注了 @M，则 NaiveWaiter 及其子类匹配 @within(M) 的切点。  
+   注意，这里都是针对类而言，而不是接口。
+
+5. 一般情况下，使用 this() 和 target() 来匹配定义切点，二者是等效的；区别在于通过引介切面产生代理  
+   对象时，this() 可匹配代理对象的所有方法，包括织入的引介方法，而 target() 不匹配通过引介切面产生  
+   的代理对象。
+
+#### @AspectJ 切点表达式通配符
+
+1. \*  
+   匹配任意字符，但只能匹配上下文中的一个元素
+2. ..  
+   匹配任意字符，可匹配上下文中的多个元素;   
+   但在表示类时，必须和*联合使用，在表示入参时则单独使用；
+3. \+  
+   表示按类型匹配指定类及其子类
+
+#### @AspectJ 逻辑运算符
+
+`&& and`，`|| or`, `! not`
+
+#### @AspectJ 进阶
+
+@AspectJ 可以使用切点函数定义切点，还可以使用逻辑运算符对切点进行复合运算得到复合切点。  
+为了在切面中重用切点，还可以对切点进行命名，以便在其他地方引用。  
+当一个连接点匹配多个切点时，需要考虑织入顺序的问题，另外一个重要的问题是如何在增强中访问  
+连接点上下文的信息。
+
+##### 增强织入的顺序
+
+一个连接点同时匹配多个切点时，切点对应的增强在连接点上的织入顺序如下：
+
+1. 增强在同一个切面类中，则按照增强在切面类中定义的顺序进行织入
+2. 增强位于不同的切面类中，且这些切面类都实现了 Ordered 接口，则由接口方法的顺序号从小到大织入
+3. 增强位于不同的切面类中，且这些切面类没有实现 Ordered 接口，则织入的顺序是不确定的
+
+#### 访问连接点信息
+
+AspectJ 使用 org.aspectj.lang.JointPoint 接口表示目标类连接点对象。如果是环绕增强，则使用  
+org.aspectj.lang.ProceedingJoinPoint 表示连接点对象，该类是 JointPoint 的子接口。
+
+任何增强方法都可以通过将第一个入参声明为 JoinPoint 访问连接点上下文信息。
+
+#### 绑定连接点方法入参
+
+`args(arg1, arg2, ...) public void bindFunc(Type1 arg1, Type2 arg2)`
+
+#### 绑定代理对象
+
+`this(obj) public void bindProxy(Type obj)`
+
+#### 绑定注解类对象
+
+`@within(annotation) public void bindAnno(Annotation annotation)`
+
+#### 绑定返回值
+
+`@AfterReturning(value="com.denglitong.fun.Sellor", returning="retVal") public void bindReturningVal(Type retVal)`
+
+#### 绑定抛出的异常
+
+@AfterThrowing(value="", thowing="")
+
+### 基于 Schema 配置切面
+
+使用 @AspectJ 注解需要使用 Java 5.0 及以上，如果没有 Java 5.0 Spring 还提供了基于 Schema 方式  
+配置 AspectJ 切点。Schema 配置方式和注解配置方式是殊途同归的，使用 Schema 配置切面后，切点、  
+增强类型的注解信息从切面类中剥离出来，原来的切面类兑变为 POJO。
+
+### 混合切面类型
+
+有 4 中定义切面的方式：
+
+1. 基于 @AspectJ 注解的方式（采用 Java5.0 及以上的项目优先考虑）
+2. 基于 <aop:aspect> 的方式（低版本的 JDK 使用这种方式）
+3. 基于 <aop:advisor> 的方式（升级一个基于低版本 JDK 的项目，考虑复用已经存在的 Advice类）
+4. 基于 Advisor 类的方式（项目基于低版本的 Spring，只能使用 Advisor 类）
+
+一些切面只能使用基于 API 的 Advisor 方式进行构建，如基于 ControlFlowPoint 的流程切面。  
+以上四种切面的底层技术都是一样的，即基于 CGLib 和 JDK 动态代理。
+
+### JVM Class 文件字节码转换基础知识
+
+JDK 动态代理或 CGLib 动态代理都是在运行期进行织入的，除了运行期织入外，还可以在类加载期通过字节码  
+编辑技术进行织入，这种方式称为 LTW（Load Time Weaving）。
+
+AspectJ LTW 使用 Java 5.0 所提供的代理功能（agent）完成加载期切面织入工作。JDK 的代理功能能够  
+让代理器访问到 JVM 的底层部件，借此向 JVM 注册类文件转换器，在类加载时对类文件的字节码进行转换。
+
+AspectJ LTW 基于 JDK 动态代理技术，而 JDK 动态代理的作用范围是整个 JVM，这种方式比较粗放，  
+对于单一 JVM 多个 Java 应用的情况尤其不合适。Spring 为 LTW 的过程提供了细粒度的控制，它支持在单个  
+ClassLoader 范围内实施类文件转换，且配置更为简单。
+
+Spring 的 LTW 仅支持AspectJ 定义切面的编译期织入，Spring LTW 直接采用了与 AspectJ LTW 相同的  
+基础结构，即它利用类路径下的 META-INF/aop.xml 配置文件找到切面定义及切面所要实施的候选目标类的信息，  
+通过 LoadTimeWeaver 在特定 Web 容器的 ClassLoader 加载类的时候，将切面织入目标类中，织入后的  
+目标类被加载到 VM 中。这样 Spring 容器在初始化 Bean 实例时，采用的 Bean 类就已经是被织入了切面的类。
+
+大多数 Web 应用服务器的 ClassLoader 都支持直接访问 Instrument，无须通过 -javaagent 启动参数指定  
+代理（除 Tomcat 外），拥有这种能力的 ClassLoader 称为"组件使能（instrument-capable）"。
+
+Spring 专门为 Tomcat 提供了一个 TomcatInstrumentableClassLoader，它扩展了 Tomcat 服务器的  
+org.apache.catalina.loader.WebappClassLoader，并实现了 LoadTimeWeaver 接口。

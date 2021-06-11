@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd ">
+
+    <!-- 一个配置文件可同时定义多个<aop:config>，可分别采用不同的 JDK 动态代理或 CGLib 动态代理 -->
+    <aop:config proxy-target-class="true">
+        <!--命名切点-->
+        <aop:pointcut id="greetToPointCut" expression="target(com.denglitong.schema.NaughtyWaiter) and
+                execution(* greetTo(..))"/>
+        <!--元素在<aop>:config>的位置是有合法顺序的-->
+        <aop:advisor advice-ref="teatBeforeAdvice"
+                     pointcut="execution(* com..*.Waiter.greetTo(..))"/>
+
+        <!--切面类：ref，切面增强逻辑：method，切点位置：pointcut，织入方位：aop:before-->
+        <aop:aspect ref="adviceMethods">
+            <!--匿名切点-->
+            <!--前置增强-->
+            <aop:before pointcut="target(com.denglitong.schema.NaiveWaiter) and
+                execution(* greetTo(..))" method="preGreeting"/>
+
+            <!--引用命名切点-->
+            <!--后置增强-->
+            <aop:after-returning pointcut-ref="greetToPointCut" method="postGreeting"/>
+        </aop:aspect>
+
+        <!--
+            切点引用可跨<aop:aspect>切面元素，如果在<aop:aspect>内部定义需要先定义才能在其他
+            <aop:aspect>引用，即此时依赖声明和引用的先后顺序。
+            为了让切点可在整个<aop:config>可访问，命名切点最好在<aop:config>一级子元素定位，
+            而不是定位在<aop:aspect>内部。
+        -->
+        <aop:aspect ref="adviceMethods">
+            <aop:after-returning method="postGreeting" pointcut-ref="greetToPointCut"/>
+        </aop:aspect>
+
+        <aop:aspect ref="adviceMethods">
+            <!--后置增强+绑定返回参数-->
+            <aop:after-returning pointcut="target(com.denglitong.schema.SmartSeller)"
+                                 method="afterReturning" returning="retVal"/>
+            <!--环绕增强-->
+            <aop:around method="aroundMethod" pointcut="execution(* serveTo(..)) and
+                within(com.denglitong.schema.Waiter+)"/>
+            <aop:around method="aroundMethod" pointcut="execution(* sell(..)) and
+                within(com.denglitong.schema.SmartSeller)"/>
+            <!--抛出异常增强-->
+            <aop:after-throwing method="afterThrowing" throwing="iae"
+                                pointcut="target(com.denglitong.schema.SmartSeller) and
+                execution(* checkBill(..))"/>
+            <!--final 增强-->
+            <aop:after method="afterMethod" pointcut="execution(* com..*.Waiter.greetTo(..))"/>
+
+            <!--引介增强-->
+            <!--引介增强没有 method 属性，但包含它的<aop:aspect>元素仍然要通过 ref 属性指定一个增强 bean-->
+            <aop:declare-parents types-matching="com.denglitong.schema.Waiter+"
+                                 implement-interface="com.denglitong.schema.Seller"
+                                 default-impl="com.denglitong.schema.SmartSeller"/>
+
+        </aop:aspect>
+
+        <aop:aspect ref="adviceMethods">
+            <aop:before method="bindParams" pointcut="target(com.denglitong.schema.NaiveWaiter) and
+                args(name,num,..)"/>
+        </aop:aspect>
+    </aop:config>
+
+    <bean id="adviceMethods" class="com.denglitong.schema.AdviceMethods"/>
+    <bean id="naiveWaiter" class="com.denglitong.schema.NaiveWaiter"/>
+    <bean id="naughtyWaiter" class="com.denglitong.schema.NaughtyWaiter"/>
+    <bean id="smartSeller" class="com.denglitong.schema.SmartSeller"/>
+    <bean id="teatBeforeAdvice" class="com.denglitong.schema.TestBeforeAdvice"/>
+</beans>
