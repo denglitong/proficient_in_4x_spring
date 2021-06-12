@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.denglitong.spel"/>
+    <!--开启属性占位符, #{keyInJdbcProperties} -->
+    <context:property-placeholder properties-ref="properties"/>
+
+    <bean id="numberGuess" class="com.denglitong.spel.NumberGuess"
+          p:randomNumber="#{T(java.lang.Math).random() * 100.0}"/>
+
+    <bean id="systemPropertyBean" class="com.denglitong.spel.SystemPropertyBean"
+          p:osName="#{systemProperties['os.name']}"
+          p:javaHome="#{systemProperties['java.class.path']}"
+          p:javaVersion="#{systemProperties['java.class.version']}"/>
+
+    <bean id="shapeGuess" class="com.denglitong.spel.ShapeGuess"
+          p:initialShapeSeed="#{numberGuess.randomNumber}"/>
+
+    <!-- #{properties['keyInJdbcProperties']} -->
+    <util:properties id="properties" location="classpath:com/denglitong/spel/jdbc.properties"/>
+
+</beans>

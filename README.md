@@ -948,3 +948,44 @@ Spring 的 LTW 仅支持AspectJ 定义切面的编译期织入，Spring LTW 直�
 
 Spring 专门为 Tomcat 提供了一个 TomcatInstrumentableClassLoader，它扩展了 Tomcat 服务器的  
 org.apache.catalina.loader.WebappClassLoader，并实现了 LoadTimeWeaver 接口。
+
+## Spring SpEL
+
+Spring 动态表达式语言（简称 SpEL），是一个支持运行时查询和操作对象图的强大动态语言，具有诸如显式方法  
+调用和基本字符串模板函数等特性。
+
+### JVM 动态语言
+
+Java 在实现复杂业务系统、大型商业系统、分布式系统及中间件等方面有着非常强的优势，但在开发这些系统的过程中，  
+优势需要引用动态语言的一些特性，以弥补其在动态性方面的不足。特别是在解决一些商业系统中动态规则的解析需求，  
+如积分规则、各类套餐计费、活动促销等规则时。
+
+为了简化在 Java 中使用动态脚本语言的难度，Java 6.0 开启提供对 JSR-223 规范的全貌支持，其规范了在 Java  
+虚拟机上运行的动态脚本语言与 Java 程序之间的交互方式，并在 Java 6.0中内置了 Mozilla Rhino 的   
+JavaScript 解析引擎，因此可以很方便地在 Java 中调用 JavaScript 编写的动态脚本。
+
+`JavaScript`, `Jruby`, `Jython`
+
+### SpEL 表达式概述
+
+SpEL 不直接依赖于 Spring 框架，可独立使用，只是在 Spring 框架中使用更加便捷。如在 Bean 配置定义中，  
+可直接通过`#{}`编写 SpEL 表达式。
+
+### SpEL 基础表达式
+
+1. 文本字符解析  
+   文本表达式支持字符串、日期、数字、布尔类型及 null。
+2. 对象属性解析
+3. 数组、集合类型解析
+4. 方法解析
+5. 操作符解析  
+   关系操作符、逻辑操作符、算术运算操作符、三元运算符、安全导航操作符、Elvis 操作符
+6. 赋值、类型、构造器、变量
+
+### 在 Spring 中使用 SpEL
+
+在 XML 配置方式或注解配置方式中都可以使用 SpEL 表达式进行一些高级配置，两种方式都采用统一的语法使用SpEL  
+表达式：#{<expression string>}
+
+SpEL 表达式的出现提供了一个轻量级的表达式框架，它实现了一套丰富的表达式操作，支持文本、对象、集合、方法等  
+表达式解析，可满足大多数表达式场景需求。使用 SpEL 可完成众多高级的 Bean 配置问题。  
