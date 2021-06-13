@@ -988,4 +988,74 @@ SpEL 不直接依赖于 Spring 框架，可独立使用，只是在 Spring 框�
 表达式：#{<expression string>}
 
 SpEL 表达式的出现提供了一个轻量级的表达式框架，它实现了一套丰富的表达式操作，支持文本、对象、集合、方法等  
-表达式解析，可满足大多数表达式场景需求。使用 SpEL 可完成众多高级的 Bean 配置问题。  
+表达式解析，可满足大多数表达式场景需求。使用 SpEL 可完成众多高级的 Bean 配置问题。
+
+## Spring 对 DAO 的支持
+
+随着持久化技术的持续发展，各种持久化框架已趋于成熟。Spring 对多个持久化技术提供了集成支持，包括  
+Hibernate、MyBatis、JPA、JDO，此外 Spring 还提供了一个简化 JDBC API操作的 Spring JDBC 框架。
+
+    JDBC 是 Java DataBase Connectivity 的缩写，它是 Java 程序访问数据库的标准接口。  
+
+使用 Java 程序访问数据库时，Java代码并不是直接通过 TCP 连接去访问数据库，而是通过 JDBC 接口来访问，  
+而 JDBC 接口则通过 JDBC 驱动来实现真正对数据库的访问。
+
+`Java App` -> `JDBC Interface(JDK)` -> `JDBC Driver(Vendor)` -> Database
+
+Spring 提供了通用的异常体系及模板类，使业务层和具体的持久化技术实现解耦。这是 Spring 能整合持久化技术  
+的关键，体现了开发模式中"开-闭原则"。
+
+DAO(Data Access Object) 是用于访问数据的对象，数据可保存在数据库、文件或 LDAP 中，DAO 不但屏蔽了  
+数据存储最终介质的不同，也屏蔽了具体实现技术的不同。
+
+JDBC -> Hibernate/MyBatis/JPA/JPO
+
+只要为数据访问定义好 DAO 接口，并使用具体的技术实现 DAO 接口的功能，就可以在不同的实现技术间平滑切换。
+
+### Spring DAO 异常体系
+
+统一的异常体系是整合不同的持久化技术的关键，它使得 Spring 可以定义出和具体实现技术无关的 DAO 接口，  
+以及整合不同的持久化技术到相同的事务管理体系中。
+
+强制捕捉的检查型异常除限制开发人员的自由外，并没有提供什么有价值的东西，检查型异常的泛滥，使得异常处理  
+代码喧宾夺主地侵入到业务代码中，破坏了代码的整洁和优雅。Spring 的异常体系都是建立在运行期异常的基础的上。
+
+### Spring 数据访问模板
+
+按照传统的方式访问数据库，都需要经过 1）准备资源 2）启动事务 3）在事务中执行具体的数据访问操作 4）提交  
+/回滚事务 5）关闭资源，处理异常 这些步骤，而只有 3）是和业务相关的。Spring 将这个相同的数据访问流程  
+固化到模板类中，将数据访问中固定和变化的部分分开，这样只需编写好回调接口，并调用模板类进行数据访问，就  
+可以得到预期的结果。
+
+Spring 为不同持久化技术提供的模板类：
+
+    JDBC            -   org.springframework.jdbc.core.JdbcTemplate
+    Hibernate X.0   -   org.springframewrok.orm.hibernateX.HibernateTemplate
+    JPA             -   org.springframework.orm.jpa.JpaTemplate
+    JDO             -   org.springframework.orm.jdo.JdoTemplate
+
+如果直接使用模板类，则一般需要在 DAO 中定义一个模板对象并提供数据源。为此 Spring 为每种持久化技术都  
+提供了支持类，支持类中完成了这样的功能，只需扩展这些类就直接编写实际的数据访问逻辑，因此更加方便。  
+这些支持类继承自 DaoSupport 类，其实现了 InitializingBean 接口，在 afterPropertiesSet() 接口  
+方法中检查模板对象和数据源是否被正确设置，否则抛出异常。
+
+    JDBC            -   org.springframework.jdbc.core.JdbcDaoSupport
+    Hibernate X.0   -   org.springframework.orm.hibernateX.HibernateDaoSupport
+    JPA             -   org.springframework.orm.jpa.JpaDaoSupport
+    JDO             -   org.springframework.orm.jdo.JdoDaoSupport
+
+### 配置数据源
+
+不管何种持久化技术，都必须拥有数据连接。在 Spring 中数据连接是通过数据源获得的。  
+在 Spring 中，可通过 JNDI 获取服务器的数据源、可直接在 Spring 容器中配置数据源、还可通过代码方式  
+创建一个数据源。
+
+Spring 在第三方依赖包中包含了两个数据源的实现类包：其一是 Apache 的 DBCP，其二是 C3P0。
+
+如果应用配置在高性能的应用服务器（如 WebLogic 或 WebSphere 等）上，则可能更希望使用应用服务器本身  
+提供的数据源。应用服务器的数据源使用 JNDI 开放调用者使用。
+
+### 小结
+
+Spring 为各种持久化技术提供了便捷的支持类，不但包含数据访问模板，还包含数据源或会话等内容。通过扩展  
+支持类定义自己的数据访问类是最简单的数据访问方式。
