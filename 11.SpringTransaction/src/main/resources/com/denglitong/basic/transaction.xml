@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <context:property-placeholder location="jdbc.properties"/>
+    <bean id="dataSource"
+          class="org.apache.commons.dbcp.BasicDataSource"
+          destroy-method="close"
+          p:driverClassName="${driverClassName}"
+          p:url="${url}"
+          p:username="${userName}"
+          p:password="${password}"/>
+
+    <!--配置 Spring JDBC 和 MyBatis 事务管理器-->
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+          p:dataSource-ref="dataSource"/>
+
+    <!--配置 JPA 事务管理器-->
+    <bean id="entityManagerFactory"
+          class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+          p:dataSource-ref="dataSource"/>
+    <bean id="transactionManager"
+          class="org.springframework.orm.jpa.JpaTransactionManager"
+          p:entityManagerFactory-ref="entityManagerFactory"/>
+
+    <!--配置 Hibernate 事务管理器-->
+    <bean id="sessionFactory"
+          class="org.springframework.orm.hibernate.LocalSessionFactoryBean"
+          p:dataSource-ref="dataSource"
+          p:mappingResource="classpath:hibernate.xml">
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.generate_statistics">true</prop>
+            </props>
+        </property>
+    </bean>
+</beans>

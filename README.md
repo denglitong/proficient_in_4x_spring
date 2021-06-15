@@ -1059,3 +1059,92 @@ Spring 在第三方依赖包中包含了两个数据源的实现类包：其一�
 
 Spring 为各种持久化技术提供了便捷的支持类，不但包含数据访问模板，还包含数据源或会话等内容。通过扩展  
 支持类定义自己的数据访问类是最简单的数据访问方式。
+
+## Spring 的事务管理
+
+Spring 不但提供了和底层事务源无关的事务抽象，还提供了声明式事务的功能。Spring 的事务管理可能是 Spring  
+应用被使用最多、应用最广的功能。
+
+### 事务属性值的实际意义
+
+数据的"一致性"是最终目标，数据库管理系统一般采用重执行日志来保证原子性、一致性和持久性。  
+和 Java 程序采用对象锁机制进行线程同步类似，数据库管理系统采用数据库锁机制保证事务的隔离性。
+
+- 脏读（dirty read）：A 事务读取 B 事务尚未提交的更改数据
+- 不可重复读（unrepeatable read）：在同一事务的不同时刻读取到的数据不一致（该数据被别的事务提交更改了）
+- 幻想读（phantom read）：在同一事务的不同时刻读取到的数据不一致（有新增数据来自于其他事务提交）
+
+        防止读取到更改数据，只需对操作的数据添加行级锁，阻止操作中的数据发送变化；而防止读取到新增数据，
+        则往往需要添加表级锁（将整张表锁定，防止新增数据）。
+
+- 第一类丢失更新：A 事务回滚时将 B 事务已提交的数据覆盖了
+- 第二类丢失更新：A 事务提交时将 B 事务已提交的数据覆盖了
+
+事务的隔离级别：
+
+- READ UNCOMMITTED
+- READ COMMITTED
+- REPEATABLE READ
+- SERIALIZABLE
+
+Oracle 使用多版本机制彻底解决了在非阻塞时读到脏数据的问题并保证读的一致性。
+
+### ThreadLocal 的工作机制
+
+资源池本身解决的是数据连接或会话的缓存问题，并非数据连接或会话的线程安全问题。  
+传统经验上，多线程环境下访问某个非线程安全的对象，必须采用 synchronized 进行线程同步。但这会影响系统  
+性能，而且通过代码同步解决线程安全的挑战性很大，模板类使用 ThreadLocal 来解决线程安全问题。
+
+java.lang.ThreadLocal，线程局部变量，为解决多线程并发提供了一种新的思路，使用这个工具类可以很简洁地  
+编写出优美的多线程程序。ThreadLocal 为每个使用该变量的线程分配一个独立的变量副本，每个线程可以在本地  
+独立地改变自己的副本而不会影响其他线程所对应的副本。
+
+InheritableThreadLocal 继承自 ThreadLocal，它自动为子线程复制一份从父线程哪里继承而来的本地变量。
+
+对于多线程资源共享的问题，同步机制采取了"以时间换空间"的方式：访问串行化，对象共享化；而 ThreadLocal  
+采用了"以空间换时间"的方式：访问并行化，对象独享化。前者仅提供一份变量，让不同的线程排队访问；而后者为  
+每个线程都提供了一份变量，因此可以同时访问而互不影响。
+
+Spring 通过 ThreadLocal 将一次线程访问里面涉及的多个层的非线程安全的变量封装进 ThreadLocal，使得  
+这些变量变成线程安全的，也即让这些层中涉及的类也变为线程安全的，即可以为 singleton 单例的。
+
+### Spring 事务管理的体系结构
+
+Spring 为事务管理提供了一致的编程模板，不管是选择 Spring JDBC、Hibernate、JPA 还是选择 Mybatis。  
+Spring 提供了事务管理模板类 TransactionTemplate，配合事务回调 TransactionCallback 指定具体的  
+持久化操作，就可以通过编程实现事务管理。
+
+Spring 事务管理的亮点在于声明式事务，在 IoC 配置中指定事务的边界和属性，即可自动的应用事务属性。  
+Spring 针对单数据源应用，直接使用底层的数据源管理事务，只有在面对多数据源时才寻求 Java EE 应用服务器  
+的支持，通过引用应用服务器中的 JNDI 资源完成 JTA（Java Transaction API） 事务。
+
+Spring 对事务的统一处理方式，屏蔽了不同持久化技术之间、是否使用 JTA 事务之间的差异，让用户完全可以抛开  
+事务管理的问题编写程序，并可通过 Spring 的配置完成事务的管理工作。
+
+#### 事务管理关键抽象
+
+`TransactionDefinition`, `PlatformTransactionManager`, `TransactionStatus`
+
+Spring 的事务同步管理器类 TransactionSynchronizationManager 使用 ThreadLocal 为不同事务线程  
+提供了独立的资源副本，同时维护事务配置的属性和运行状态信息。事务同步管理器是 Spring 事务管理的基石。  
+Spring 框架为不同的持久化技术提供了一套从 TransactionSynchronizedManager 中获取对应线程绑定资源  
+的工具类：
+
+- Spring JDBC或 MyBatis - org.springframework.jdbc.datasource.DataSourceUtils
+- Hibernate X.0 - org.springframework.orm.hibernateX.SessionFactoryUtils
+- JPA - org.springframework.orm.jpa.EntityManagerFactoryUtils
+- JDO - org.springframework.orm.jdo.PersistenceManagerFactoryUtils
+
+#### 编程式的事务管理
+
+虽然实际应用中很少需要通过编程来进行事务管理，Spring 还是为编程式事务管理提供了模板类 TransactionTremplate，  
+以满足一些特殊场合的需要。
+
+### 基于 XML 的事务配置
+
+### 基于注解的事务配置
+
+### 小结
+
+Spring 声明式事务管理是 Spring 中的亮点，可在 Spring 轻量级容器中使用，这曾经只能在臃肿、厚重的 EJB  
+应用服务器中才能使用。

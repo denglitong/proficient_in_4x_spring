@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="classpath:applicationContext-dao.xml"/>
+
+    <!--按约定的习惯，需要事务增强的业务类一般将 id 取名为 xxxTarget-->
+    <bean id="bbtForumTarget"
+          class="com.denglitong.service.BbtForumService"
+          p:forumDao-ref="forumDao"
+          p:topicDao-ref="topicDao"
+          p:postDao-ref="postDao"/>
+
+    <!--使用事务代理工厂类为目标业务 Bean 提供事务增强
+        使用 target 属性指定需要代理的目标 Bean-->
+    <bean id="bbtForum"
+          class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+          p:transactionManager-ref="txManager"
+          p:target-ref="bbtForumTarget">
+        <!--为业务 Bean 的不同方法配置事务属性-->
+        <property name="transactionAttributes">
+            <props>
+                <!--只读事务-->
+                <prop key="get*">PROPAGATION_REQUIRED,readOnly</prop>
+                <!--采用名称字符串包含的比较方式，异常抛出可包含的类名可为
+                    Exception, SQLException, ParseException
+                    Spring 默认的事务回滚规则为"运行期异常回滚，检查型异常不回滚不提交交给上层处理
+                    所有这里的异常设置仅对检查型异常有意义"-->
+                <prop key="add*">PROPAGATION_REQUIRED,-Exception</prop>
+                <!--可写事务-->
+                <prop key="*">PROPAGATION_REQUIRED</prop>
+            </props>
+        </property>
+        <!--<property name="optimize" value="true"/>-->
+    </bean>
+
+</beans>
