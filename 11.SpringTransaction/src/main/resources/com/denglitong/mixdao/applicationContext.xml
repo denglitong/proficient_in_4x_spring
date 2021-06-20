@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <context:component-scan base-package="com.denglitong.mixdao"/>
+
+    <bean id="datasource"
+          class="org.apache.commons.dbcp.BasicDataSource"
+          p:driverClassName="${jdbc.driverClassName}"
+          p:url="${jdbc.url}"
+          p:username="${jdbc.username}"
+          p:password="${jdbc.password}"/>
+
+    <bean id="jdbcTemplate"
+          class="org.springframework.jdbc.core.JdbcTemplate"
+          p:dataSource-ref="datasource"/>
+
+    <!--配置 Hibernate 事务管理器-->
+    <bean id="sessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean"
+          p:dataSource-ref="datasource">
+        <property name="annotatedClasses">
+            <list>
+                <value>com.denglitong.mixdao.User</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="hibernateTemplate"
+          class="org.springframework.orm.hibernate4.HibernateTemplate"
+          p:sessionFactory-ref="sessionFactory"/>
+
+    <!--<bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+          p:dataSource-ref="datasource"/>-->
+
+    <bean id="hibernateTransactionManager"
+          class="org.springframework.orm.hibernate4.HibernateTransactionManager"
+          p:sessionFactory-ref="sessionFactory"
+    />
+
+    <!-- Could not retrieve pre-bound Hibernate session
+         Could not obtain transaction-synchronized Session for current thread
+         出现这个报错是因为 transaction 配置不正确，在调用栈中出现了没有被包含的类
+         这里注意 expression 里面定义的切点（包路径） -->
+    <aop:config proxy-target-class="true">
+        <aop:pointcut id="serviceJdbcMethod" expression="within(com.denglitong.mixdao.BaseService+)"/>
+        <aop:advisor advice-ref="jdbcAdvice" pointcut-ref="serviceJdbcMethod"/>
+    </aop:config>
+
+    <tx:advice id="jdbcAdvice" transaction-manager="hibernateTransactionManager">
+        <tx:attributes>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+
+</beans>

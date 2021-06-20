@@ -118,6 +118,38 @@ WebSocket 提供了一个在 Web 应用汇总高校、双向的通信，需要�
    还需要加上子系统的前缀。包的规划对于大型应用非常重要，它直接关系到应用部署和  
    分发的便利性。
 
+### 运行 Web 应用
+
+基于 Maven 工程，运行 Web 应用有两种方式：第一种方式是在 IDE 工具中配置 Web 应用服务器；  
+第二种是在 pom.xml 文件中配置 Web 应用服务器插件。推荐采用第二种方式：
+
+        <build>
+            <plugins>
+                <!-- jetty插件 -->
+                <plugin>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>maven-jetty-plugin</artifactId>
+                    <version>6.1.25</version>
+                    <configuration>
+                        <connectors>
+                            <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+                                <port>8000</port>
+                                <maxIdleTime>60000</maxIdleTime>
+                            </connector>
+                        </connectors>
+                        <contextPath>/bbs</contextPath>
+                        <scanIntervalSeconds>0</scanIntervalSeconds>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </build>
+
+在 pom.xml 中配置好 Jetty 插件后，在 IDEA 工程右边的 Maven Projects 中找到 Plugins 下面的  
+jetty 插件，点击运行 jetty:run 即可启动 web 应用。
+
+contextPath 可选，用于配置应用上下文，不配置则默认为 pom.xml 中设置的 <artifactId> 名称。  
+scanIntervalSeconds 可选\[秒\]，表示热部署间隔，默认为 0 表示禁用热部署。
+
 ## Spring Boot 快速入门
 
 Spring 配置的复杂性多年来一直为人所诟病，需要编写复杂的 XML 配置文件。  
@@ -1148,3 +1180,88 @@ Spring 框架为不同的持久化技术提供了一套从 TransactionSynchroniz
 
 Spring 声明式事务管理是 Spring 中的亮点，可在 Spring 轻量级容器中使用，这曾经只能在臃肿、厚重的 EJB  
 应用服务器中才能使用。
+
+## Spring 的事务管理难点剖析
+
+### DAO 和事务管理
+
+DAO 和事务管理器没有必然的关联，不适用 TransactionManager 仍然可以使用 DAO 持久化，如 JdbcTemplate  
+就默认 autoCommit 为 true，即任何通过 JdbcTemplate 执行的语句会立即提交、持久化到数据库。
+
+Hibernate的事务管理器在调用 save/update 等方法时，并不直接向数据库发送 SQL 语句，只在提交事务（commit）  
+或 flush 一级缓存时才真正向数据库发送 SQL。所以如果使用 Hibernate 访问数据库，没有理由不配置事务管理器。  
+如果不配置 Hibernate 事务管理器，则 Spring 会使用默认的事务管理策略（PROPAGATION_REQUIRED,read_only），  
+如果有修改操作就会抛出异常。
+
+### 应用分层的迷惑
+
+不需要拘泥于固定的分层，使用 Spring 框架本身不应是代码复杂化的理由：从实际应用出发，根据实际需要进行编程。
+
+### 事务方法嵌套调用的迷茫
+
+Spring 框架提供了事务的传播行为，对于事务的其他特性，Spring 是借助底层资源的功能来完成的。
+
+### 多线程的困惑
+
+#### Spring 通过单实例化 Bean 简化多线程问题
+
+大多数情况下，Spring 的 Bean 都是单实例的（singleton），单实例的最大好处是线程无关性，不存在线程并发  
+访问的问题，也就是线程安全的。一个类能够以单实例的方式运行的前提是"无状态"，即不能拥有状态化的成员变量。  
+Spring 通过 ThreadLocal 将有状态的变量本地现成话，达到另一个层面上的"线程无关"，从而将 Bean 无状态化。
+
+### 多种数据库访问技术联合使用中的事务管理
+
+ORM 技术：Hibernate, JPA, JDO  
+JDBC 技术：Spring JDBC, MyBatis
+
+一般需要的使用会使用一种 ORM 技术 + 一种 JDBC 技术。前者的会话（Session）是对后者连接（Connection）  
+的封装。
+
+Hibernate + Spring JDBC / MyBatis -> 事务管理器使用 HibernateTransactionManager  
+JPA + Spring JDBC / MyBatis -> 事务管理器使用 JpaTransactionManager  
+JDO + Spring JDBC / MyBatis -> 事务管理器使用 JdoTransactionManager
+
+使用 Hibernate 事务管理器后，可以混合使用 Hibernate + Spring JDBC，它们将工作在同一事务上下文。  
+但是在使用 Spring JDBC访问数据时，Hibernate 的一二级缓存得不到同步（需手动刷新 flush）。此外，  
+hibernate 的缓存延迟更新同步机制可能会覆盖 Spring JDBC 数据更改的结果。不建议同时使用 Hibernate +  
+Spring JDBC 对数据进行写操作。
+
+### 事务增强对类方法的要求
+
+Spring 事务增强基 AOP，基于接口动态代理的 AOP 要求接口的方法必须是 public 的，同时不能使用 static  
+修饰符；基于 CGLib 动态代理的不能使用 final/static/private 修饰符的方法；这些方法不能被 Spring  
+事务增强，但只要它们被外层的事务方法调用了，事务的传播行为依然可以到达这些方法，此时这些方法也是运行在  
+事务上下文的。
+
+能否被 Spring 事务增强，区别只在于能否主动开启一个事务，和是否运行在事务上下文没有关系。
+
+### 数据连接泄漏
+
+Spring DAO 对数据访问技术框架都使用了模板化技术进行了封装，只要使用 Spring DAO 的模板进行数据访问，  
+就可以避免数据连接泄漏的问题，如：JdbcTemplate, HibernateTemplate 等。Spring DAO 模板类对开发者  
+是透明的，开发者无需关心 Connection/Session 等的获取和释放操作，这是 Spring 给予开发者的承诺。
+
+Spring 提供了一个能从当前事务上下文中获取绑定连接的工具类，`DataSourceUtils`. 需要注意使用该类在没有  
+事务上下文的时候获取连接依然会从数据库里取新连接，从而造成连接泄漏（因为没有主动释放）。
+
+经尽量使用 JdbcTemplate/HibernateTemplate 等模板进行数据访问操作，避免直接获取数据连接，规避连接  
+泄漏的风险。
+
+如果不得以要显式获取数据连接，除了可以使用 DataSouceUtils 获取事务上下文绑定的连接外，还可以通过  
+TransactionAwareDataSourceProxy 对数据源进行代理，通过代理获取连接具有事务上下文感知的能力，  
+不会造成连接泄漏。
+
+Spring JDBC / MyBatis - DataSourceUtils, TransactionAwareDataSourceProxy  
+Hibernate - SessionFactoryUtils, LocalSessionFactoryBean  
+JPA - EntityManagerFactoryUtils
+
+### 小结
+
+Spring 声明式事务是 Spring 最核心、最常用的功能，其通过 IoC 和 AOP 非常透明地实现了声明式事务的功能。
+
+- Spring 通过事务传播机制可以很好地应对事务方法嵌套调用的情况
+- 单实例的对象不存在线程安全问题，经过事务管理增强的单实例 Bean 可以很好地工作在多线程环境下
+- 混合使用多个数据访问技术框架的最佳组合是一个 ORM 框架（Hibernate/JPA）+ 一个 JDBC框架  
+  （Spring JDBC/MyBatis）。直接使用 ORM 技术框架对应的事务管理器就可以，但须考虑 ORM 框架缓存同步的问题。
+- 注意数据连接泄漏的问题，尽量使用模板类操作/DataSourceUtils，避免手动获取，或者对数据源进行代理，  
+  以便使数据源拥有感知事务上下文的能力。
