@@ -1,6 +1,6 @@
 # 精通 Spring 4.X
 
-## Spring 概述
+## 1.Spring 概述
 
 Spring 是分层的 Java/SE/EE应用一站式的轻量级开源框架，以 IoC（Inverse of Control，控制反转） 和 AOP（Aspect Oriented Programming，切面编程）为内核，提供了展现层
 Spring MVC、持久层 Spring JDBC 及业务层事务管理等一站式的企业级应用技术。
@@ -19,7 +19,7 @@ EJB（Enterprise Java Beans）的缺点：对所有企业应用采用统一标�
 EJB 的优点：声明事务、透明持久化。  
 Spring的优点：方便解耦，简化开发；AOP 编程的支持；声明式事务的支持；方便程序的测试； 方便集成各种优秀框架；降低 Java EE API的使用难度；高质量的 Java 源码；
 
-### Spring 体系结构
+### 2.Spring 体系结构
 
 整个框架按其所属功能可划分为 5 个主要模块：`IoC`, `AOP`, `数据访问和集成`，`Web 及远程操作`，`测试框架`。
 
@@ -60,7 +60,7 @@ Spring 自己提供了一个完整的类似于 Structs 的 MVC 框架，称为 S
 
 WebSocket 提供了一个在 Web 应用汇总高校、双向的通信，需要考虑到客户端和服务器之间的高频和低时延消息交换。 一般的应用场景有在线交易、游戏、写作、数据可视化等。
 
-### Spring 4.0 新特性
+### 3.Spring 4.0 新特性
 
 1. 全面支持 Java 8.0
 
@@ -109,7 +109,7 @@ WebSocket 提供了一个在 Web 应用汇总高校、双向的通信，需要�
 - 测试的增强  
   提供 @Sql 注解
 
-## Spring 快速入门
+## 4.Spring 快速入门
 
 1. 领域对象 domain 从严格意义上将属于业务层，但由于领域对象可能同时被持久层和  
    展现层共享，所以一般将其单独划分到一个包中
@@ -150,7 +150,7 @@ jetty 插件，点击运行 jetty:run 即可启动 web 应用。
 contextPath 可选，用于配置应用上下文，不配置则默认为 pom.xml 中设置的 <artifactId> 名称。  
 scanIntervalSeconds 可选\[秒\]，表示热部署间隔，默认为 0 表示禁用热部署。
 
-## Spring Boot 快速入门
+## 5.Spring Boot 快速入门
 
 Spring 配置的复杂性多年来一直为人所诟病，需要编写复杂的 XML 配置文件。  
 Spring Boot 的简易配置大大提升了开发体验，其背后是借助强大的 Groovy 动态语言，  
@@ -173,7 +173,7 @@ Spring Boot 实际上是一些类库的集合，它能够被任意项目的构�
 在项目类库中引入 spring-boot-x*.jar 类库来使用 Spring Boot，但是强烈建议  
 使用构建系统 Maven/Gradle 来使用 Spring Boot。
 
-## IoC 容器
+## 6.IoC 容器
 
 Inverse of Control，控制反转。  
 某一接口具体实现类的选择控制权从调用类中移除，转交给第三方决定，即由 Spring 容器  
@@ -373,7 +373,7 @@ ApplicationContext 和 BeanFactory 另一个最大的不同之处在于：前者
 Spring 为 Bean 提供了细致周全的生命周期过程，通过实现特定的接口或通过 <bean> (beans.xml 文件)属性设置，  
 都可以对 Bean 的生命周期过程施加影响。为了让 Bean 绑定 Spring 框架，推荐使用配置方式（<bean>）而非接口方式。
 
-## 在 IoC容器中装配 Bean
+## 7.在 IoC容器中装配 Bean
 
 要使应用程序中的 Spring 容器成功启动，需同时具备以下三方面的条件：
 
@@ -439,7 +439,7 @@ Spring 可通过 @Autowire 注解自动实现 Bean 的依赖注入。
 在 XML 中利用 aop, context 命名空间进行相关主题的配置。  
 其他在项目中开发的 Bean 都通过基于注解配置的方式进行配置；很少采用基于 Java 类的配置方式。
 
-## Spring 容器高级主题
+## 8.Spring 容器高级主题
 
 Spring 容器就像一台构造精妙的机器，我们通过配置文件向机器传达控制信息，机器就能按照设定的模式工作。
 
@@ -590,7 +590,7 @@ Java 通过 java.util.EventObject 类和 java.util.EventListener 接口描述事
    SimpleApplicationEventMulticaster. Spring 启动过程中会通过反射机制将任何实现了 ApplicationEventMulticaster  
    的类注册成容器的事件广播器，如果没找到外部配置可用的类，则默认使用 SimpleApplicationEventMulticaster 作为事件广播器。
 
-## Spring AOP基础
+## 7.Spring AOP基础
 
 ### AOP 概述（Aspect Oriented Programming，面向切面编程）
 
@@ -807,7 +807,7 @@ Spring 还提供了一些自动创建代理/织入切面的自动代理创建器
 如 `DefaultAdvisorAutoProxyCreator` 就是功能强大的自动代理创建器，它将容器中所有的 Advisor 自动  
 织入目标 Bean 中。
 
-## 基于 @AspectJ 和 Schema 的 AOP
+## 8.基于 @AspectJ 和 Schema 的 AOP
 
 ### Java 注解（Annotation）
 
@@ -981,7 +981,7 @@ Spring 的 LTW 仅支持AspectJ 定义切面的编译期织入，Spring LTW 直�
 Spring 专门为 Tomcat 提供了一个 TomcatInstrumentableClassLoader，它扩展了 Tomcat 服务器的  
 org.apache.catalina.loader.WebappClassLoader，并实现了 LoadTimeWeaver 接口。
 
-## Spring SpEL
+## 9.Spring SpEL
 
 Spring 动态表达式语言（简称 SpEL），是一个支持运行时查询和操作对象图的强大动态语言，具有诸如显式方法  
 调用和基本字符串模板函数等特性。
@@ -1022,7 +1022,7 @@ SpEL 不直接依赖于 Spring 框架，可独立使用，只是在 Spring 框�
 SpEL 表达式的出现提供了一个轻量级的表达式框架，它实现了一套丰富的表达式操作，支持文本、对象、集合、方法等  
 表达式解析，可满足大多数表达式场景需求。使用 SpEL 可完成众多高级的 Bean 配置问题。
 
-## Spring 对 DAO 的支持
+## 10.Spring 对 DAO 的支持
 
 随着持久化技术的持续发展，各种持久化框架已趋于成熟。Spring 对多个持久化技术提供了集成支持，包括  
 Hibernate、MyBatis、JPA、JDO，此外 Spring 还提供了一个简化 JDBC API操作的 Spring JDBC 框架。
@@ -1092,7 +1092,7 @@ Spring 在第三方依赖包中包含了两个数据源的实现类包：其一�
 Spring 为各种持久化技术提供了便捷的支持类，不但包含数据访问模板，还包含数据源或会话等内容。通过扩展  
 支持类定义自己的数据访问类是最简单的数据访问方式。
 
-## Spring 的事务管理
+## 11.Spring 的事务管理
 
 Spring 不但提供了和底层事务源无关的事务抽象，还提供了声明式事务的功能。Spring 的事务管理可能是 Spring  
 应用被使用最多、应用最广的功能。
@@ -1181,7 +1181,7 @@ Spring 框架为不同的持久化技术提供了一套从 TransactionSynchroniz
 Spring 声明式事务管理是 Spring 中的亮点，可在 Spring 轻量级容器中使用，这曾经只能在臃肿、厚重的 EJB  
 应用服务器中才能使用。
 
-## Spring 的事务管理难点剖析
+## 12.Spring 的事务管理难点剖析
 
 ### DAO 和事务管理
 
@@ -1265,3 +1265,64 @@ Spring 声明式事务是 Spring 最核心、最常用的功能，其通过 IoC 
   （Spring JDBC/MyBatis）。直接使用 ORM 技术框架对应的事务管理器就可以，但须考虑 ORM 框架缓存同步的问题。
 - 注意数据连接泄漏的问题，尽量使用模板类操作/DataSourceUtils，避免手动获取，或者对数据源进行代理，  
   以便使数据源拥有感知事务上下文的能力。
+
+## 13.使用 Spring JDBC 访问数据库
+
+JDBC 灵活、直接，在完全依赖查询模型动态产生查询语句时，Hibernate/MyBatis/JPA 等框架都无法使用。
+
+在实际开发中，并不建议使用数据库自增主键，这种方式会降低程序移植性，也更加复杂（当数据库频繁更新而希望  
+程序在插入后查询得到最新的自增ID时），在应用层中创建主键才是主流的方式，可使用 UUID 或获取 SEQUENCE。
+
+在使用数据库的时候，应尽量减少使用数据库的自增键、外键、触发器、存储过程、数据库函数等高级功能，让数据库  
+只负责数据存储和查询（表设计时只需关注表空间、索引、非空限制、唯一值限制和存储查询相关的特性），不要让  
+数据库负责业务逻辑，业务逻辑处理应在应用层中进行。
+
+获取多行结果集时，RowMapper 是先批量获取数据，然后再处理数据；而 RowCallbackHandler 是一边获取数据、  
+一边处理数据，处理完就丢弃（不占用内存）；因此，可将 RowMapper 看做批量化数据处理策略，而 RowCallbackHandler  
+则采用流化处理策略。
+
+在某些情况下，我们希望得到被代理前的本地 JDBC 对象，以便调用这些驱动程序厂商相关的 API 完成一些特殊的操作。  
+为此 Spring 在 org.springframework.jdbc.support.nativejdbc 包下提供了  
+NativeJdbcExtractor 接口，不同数据源分别有对应的实现类：
+
+- C3P0 数据源：C3P0NativeJdbcExtractor
+- DBCP 数据源：CommonsDbcpNativeJdbcExtractor
+
+LOB 代表大对象数据，包括 BLOB 和 CLOB 两种类型，前者用于存储大块的二进制数据，如图片数据、视频数据等  
+（一般不宜将文件存储到数据库中，而应存储到文件服务器中）；后者用于存储长文本数据，如论坛帖子内容、产品的  
+详细描述等。
+
+不同数据库对大对象对应的字段类型并不相同，如 Oracle 对应 BLOB/CLOB，MySQL 对应 BLOB/LONGTEXT。  
+不同数据库操作 LOB 类型的数据 API 不完全相同，为此 Spring 在 org.springframework.jdbc.support.lob  
+包中提供了帮助类。
+
+- LobCreator: 非线程安全的，一个 LobCreator 只能操作一个 LOB 类型数据
+- LobHandler: LobHandler 接口为操作大二进制字段和大文本字段提供了统一访问接口，不管底层数据是以  
+  大对象的方式还是以一般数据类型的方式进行操作。此外，LobHandler 还充当 LobCreator 的工厂类。
+
+Spring JDBC 提供了对自增键及行集的支持，自增键对象让用户可以不依赖数据库的自增键，在应用层为新记录提供  
+主键。
+
+"数据库层主键方案"有如下缺点：
+
+- 给应用开发带来不便，必须通过一个查询获取最新数据的主键值
+- 不方便主键值的全局管理和控制，丧失灵活性
+- 不方便数据的整合和迁移
+
+数据库主键除承担表内数据唯一性标识外，随着应用复杂性的不断提高，主键开始承担更多责任，比如数据库切分、  
+资源定位等。
+
+可使用 UUID 产生主键值，可保证全局唯一性，缺点是 UUID 是一个 36 位的字符串比较占用存储空间。
+
+还可以使用分段长整型编码方案，将主键分为比如 3 段，第一段代表业务标识 1，第二段代码业务标识 2，第三段  
+代表业务局部主键，这样可以创建全局唯一的整型主键值。此时可通过扩展 DataFieldMaxValueIncrementer 来  
+完成主键值的获取。
+
+行集对象可绑定一个数据连接并在整个生命周期中维持该连接，此时该行集对象被称为"连接的行集"。行集对象绑定  
+连接后，可在获取数据后就关闭它，这种行集被称为"非连接的行集"。非连接行集可在断开连接是更改数据，然后在  
+更新前再重新绑定连接进行更改刷新到数据库中。
+
+除了标准的 JdbcTemplate 外，Spring 还提供了两个易用的 JDBC 模板类：
+
+- NamedParameterJdbcTemplate: 支持命名参数绑定
+- SimpleJdbcTemplate
