@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.denglitong.domain.Post" table="t_post">
+        <id name="postId" column="post_id">
+            <generator class="assigned"/>
+        </id>
+        <property name="topicId" column="topic_id"/>
+        <property name="forumId" column="forum_id"/>
+        <property name="userId" column="user_id"/>
+        <!--配置好映射文件后，还需要在 spring 配置文件中定义 LOB 数据处理器
+            让 SessionFactory 拥有处理 LOB 数据的能力-->
+        <property name="postText" column="post_text"
+                  type="org.springframework.orm.hibernate3.support.ClobStringType"/>
+        <property name="postAttach" column="post_attach"
+                  type="org.springframework.orm.hibernate3.support.BlobByteArrayType"/>
+        <property name="postTime" column="post_time"/>
+    </class>
+</hibernate-mapping>

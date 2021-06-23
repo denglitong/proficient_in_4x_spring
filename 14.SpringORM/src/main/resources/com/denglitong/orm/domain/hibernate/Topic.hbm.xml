@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.denglitong.domain.Topic" table="t_topic">
+        <id name="topicId" column="topic_id">
+            <generator class="assigned"/>
+        </id>
+        <property name="forumId" column="forum_id"/>
+        <property name="userId" column="user_id"/>
+        <property name="topicTitle" column="topic_title"/>
+        <property name="topicReplies" column="topic_replies"/>
+        <property name="topicViews" column="topic_views"/>
+        <property name="topicTime" column="topic_time"/>
+    </class>
+</hibernate-mapping>

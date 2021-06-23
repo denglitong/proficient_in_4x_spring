@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+    <settings>
+        <setting name="lazyLoadingEnabled" value="false"/>
+    </settings>
+    <typeAliases>
+        <typeAlias alias="Forum" type="com.denglitong.domain.Forum"/>
+        <typeAlias alias="Topic" type="com.denglitong.domain.Topic"/>
+        <typeAlias alias="Post" type="com.denglitong.domain.Post"/>
+    </typeAliases>
+    <!--sqlSessionFactory配置了mapperLocations之后这里的 mappers 可以移除-->
+    <!--<mappers>
+        <mapper resource="com/denglitong/orm/domain/mybatis/Forum.xml"/>
+        <mapper resource="com/denglitong/orm/domain/mybatis/Topic.xml"/>
+        <mapper resource="com/denglitong/orm/domain/mybatis/Post.xml"/>
+    </mappers>-->
+</configuration>

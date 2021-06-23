@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <context:component-scan base-package="com.denglitong.domain"/>
+    <context:component-scan base-package="com.denglitong.dao.mybatis"/>
+    <context:component-scan base-package="com.denglitong.service.mybatis"/>
+
+    <bean id="dataSource"
+          class="org.apache.commons.dbcp.BasicDataSource"
+          p:driverClassName="${jdbc.classDriverName}"
+          p:url="${jdbc.url}"
+          p:username="${jdbc.userName}"
+          p:password="${jdbc.password}"/>
+
+    <bean id="sqlSessionFactory"
+          class="org.mybatis.spring.SqlSessionFactoryBean"
+          p:dataSource-ref="dataSource"
+          p:configLocation="classpath:mybatisConfig.xml"
+          p:mapperLocations="classpath:com/denglitong/orm/domain/mybatis/*.xml"/>
+
+    <bean class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg ref="sqlSessionFactory"/>
+    </bean>
+
+    <!--配置转换器自动将映射接口类直接转换为 和 mybatis xml 对应的 Bean-->
+    <!--出现 Cannot load JDBC driver class '${jdbc.classDriverName}' 报错，
+        是因为 MapperScannerConfigurer 配置 p:sqlSessionFactory-ref="sqlSessionFactory"
+        会提前初始化 sqlSessionFactory, 而此时还未加载配置文件 jdbc.properties
+        修改为 p:sqlSessionFactoryBeanName="sqlSessionFactory" -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer"
+          p:sqlSessionFactoryBeanName="sqlSessionFactory"
+          p:basePackage="com.denglitong.dao.mybatis"/>
+</beans>

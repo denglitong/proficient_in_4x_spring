@@ -1326,3 +1326,6 @@ Spring JDBC 提供了对自增键及行集的支持，自增键对象让用户�
 
 - NamedParameterJdbcTemplate: 支持命名参数绑定
 - SimpleJdbcTemplate
+
+## 14.Spring 整合其他 ORM 框架（Hibernate/MyBatis）
+

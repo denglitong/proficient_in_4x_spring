@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--指定 hibernate 配置文件配置一个 sessionFactory-->
+    <!--<bean id="sessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean"
+          p:configLocation="classpath:hibernate.cfg.xml"/>-->
+
+    <!--移除 hibernate.cfg.xml 以更具 Spring 风格的配置-->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <context:component-scan base-package="com.denglitong.domain"/>
+    <context:component-scan base-package="com.denglitong.dao.hibernate"/>
+    <context:component-scan base-package="com.denglitong.service.hibernate"/>
+
+    <bean id="dataSource"
+          class="org.apache.commons.dbcp.BasicDataSource"
+          p:driverClassName="${jdbc.classDriverName}"
+          p:url="${jdbc.url}"
+          p:username="${jdbc.userName}"
+          p:password="${jdbc.password}"/>
+
+    <!--使用 LobHandler 操作 LOB 数据需要在事务环境下才能工作-->
+    <bean id="lobHandler"
+          class="org.springframework.jdbc.support.lob.DefaultLobHandler"
+          lazy-init="true"/>
+
+    <!--<bean id="sessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean"
+          p:dataSource-ref="dataSource"
+          p:mappingLocations="classpath:com/denglitong/orm/domain*.hbm.xml">
+        &lt;!&ndash;指定 hibernate 实体映射文件&ndash;&gt;
+        &lt;!&ndash;<property name="mappingLocations">
+            <list>
+                <value>classpath:com/denglitong/orm/domain/hibernate/Forum.hbm.xml</value>
+                <value>classpath:com/denglitong/orm/domain/hibernate/Topic.hbm.xml</value>
+                <value>classpath:com/denglitong/orm/domain/hibernate/Post.hbm.xml</value>
+            </list>
+        </property>&ndash;&gt;
+        &lt;!&ndash;配置 hibernate 属性&ndash;&gt;
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+            </props>
+        </property>
+    </bean>-->
+
+    <bean id="sessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean"
+          p:dataSource-ref="dataSource">
+        <!--指定扫描的类别路径（多个用多好分隔），将使用注解来代替 xml 定义 dao
+            @Entity @Table @Id @Column -->
+        <property name="packagesToScan" value="com.denglitong.domain"/>
+        <!--配置 hibernate 属性-->
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="hibernateTemplate"
+          class="org.springframework.orm.hibernate4.HibernateTemplate"
+          p:sessionFactory-ref="sessionFactory"/>
+
+    <!--配置 hibernate 事务管理器-->
+    <bean id="transactionManager"
+          class="org.springframework.orm.hibernate4.HibernateTransactionManager"
+          p:sessionFactory-ref="sessionFactory"/>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+</beans>
