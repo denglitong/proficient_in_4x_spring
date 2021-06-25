@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/cache
+       http://www.springframework.org/schema/cache/spring-cache.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.denglitong.initcache"/>
+
+    <!--启用基于注解的缓存驱动-->
+    <cache:annotation-driven/>
+
+    <bean id="userService" class="com.denglitong.simplecache.UserService"/>
+    <bean id="userService2" class="com.denglitong.cachegroup.UserService2"/>
+    <bean id="userService3" class="com.denglitong.cachegroup.UserService3"/>
+    <bean id="userService4" class="com.denglitong.simplecache.UserService4"/>
+    <bean id="userService5" class="com.denglitong.initcache.UserService5"/>
+
+    <!--<bean id="cacheManager"
+          class="org.springframework.cache.support.SimpleCacheManager">
+        <property name="caches">
+            <set>
+                <bean class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean"
+                      p:name="default"/>
+                <bean class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean"
+                      p:name="users"/>
+                <bean class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean"
+                      p:name="members"/>
+                <bean class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean"
+                      p:name="visitors"/>
+            </set>
+        </property>
+    </bean>-->
+
+    <!--使用 JDK 的ConcurrentMapCacheManager不需要像上面那样定义缓存caches-->
+    <!--<bean id="cacheManager"
+          class="org.springframework.cache.concurrent.ConcurrentMapCacheManager"/>-->
+
+    <!--集成 EhCache-->
+    <!--<bean id="cacheManager"
+          class="org.springframework.cache.ehcache.EhCacheCacheManager"
+          p:cacheManager-ref="ehcache"/>
+    <bean id="ehcache"
+          class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"
+          p:configLocation="classpath:ehcache.xml"/>-->
+
+    <!--集成 Guava 缓存-->
+    <bean id="cacheManager"
+          class="org.springframework.cache.guava.GuavaCacheManager"/>
+
+    <!-- begin 基于 XML 的缓存定义 -->
+
+    <!--缓存定义-->
+    <cache:advice id="cacheAdvice" cache-manager="cacheManager">
+        <cache:caching cache="users">
+            <cache:cacheable method="findUser" key="#userId"/>
+            <cache:cache-evict method="removeUser" key="#userId"/>
+        </cache:caching>
+    </cache:advice>
+
+    <!--缓存织入增强-->
+    <aop:config>
+        <aop:advisor advice-ref="cacheAdvice"
+                     pointcut="execution(* com.denglitong.simplecache.UserService4.*(..))"/>
+    </aop:config>
+
+    <!-- end 基于 XML 的缓存定义 -->
+
+</beans>
