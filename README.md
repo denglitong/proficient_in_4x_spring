@@ -1348,3 +1348,57 @@ Spring 提供了一种可在方法级别进行缓存的抽象，通过使用 AOP
 如果无法获得项目的源码，也可以用 XML 的方式配置 Spring Cache(AOP)。
 
 Spring 缓存提供了与不同缓存框架的集成服务：`EhCache`, `Guaua`
+
+## 16.任务调度和异步执行器
+
+Quartz 是任务调度领域享誉盛名的开源框架，Spring 提供了集成 Quartz 的功能。
+
+`Quartz`, `JDK Timer`, `Executor`
+
+调度通常在特定的时间点，或者在特定资源上。
+
+Java 开源的好处就是，领域问题都能找到现成的解决方案。
+
+`Scheduler`, `Trigger`, `Job`
+
+- Cron 表达式（秒 分 时 日期 月份 星期 \[年]）
+    - *: 可用在所有字段中，表示对应时间域内的每一个值，比如 每一分钟
+    - ?: 可在日期和星期字段中使用，通常指定为无意义，相当于占位符
+    - -：表达一个范围，如 10-12
+    - ,: 表示一个列表值，如 星期字段 中使用 MON,WED,FRI 表示 星期一,星期三,星期五
+    - /: x/y 表示等步长序列，x 为起始值，y 为增量步长值。  
+      如分钟字段的 0/15 表示从 0 分钟开始，间隔为 15 分钟；0/15 等同于 */15，即从零点开始的每 15 分钟
+    - L: 可在日期和星期字段中使用，代表"Last"最后一天，如一月/一周的最后一天，月份的最后一周
+    - W: 该字符只能出现在日期字段，表示离该日期最近的工作日（Work），是对前导日期的修饰；  
+      15W 表示离该月15 日最近的工作日，如果 15 日就是工作日，那么 15W 等同于 15；  
+      如果该月 15 日是星期六，那么 15W 是 14（星期五是最近的工作日）；  
+      如果该月 15 日是周日，那么 15W 是 16（星期一是最近的工作日）；
+    - LW：在日期字段可使用组合 LW，表示当月的最后一个工作日
+    - \# : 只能在星期字段使用，表示当月的第几个工作日（周几），如 6#3 表示当月的第三个星期五  
+      （1-7 表示周日到周日）
+
+JobDetailFactoryBean 扩展了 Quartz 的 JobDetail，可通过 JobDetailFactoryBean 在 XML 中配置  
+jobDetail 实例.
+
+MethodInvokingJobDetailFactoryBean 可以将一个 Bean 的某个方法封装成 jobDetail.
+
+Java Timer 运行按照固定频率重复执行某项任务，只适合对执行时间非常短的任务进行调度，因为在 Timer 中  
+所有的 TimerTask 都在同一背景线程中执行。
+
+TimerTask 代表一个需要多次执行的任务，它实现了 Runnable 接口，而 Timer 负责制定调度规则并调度 TimerTask.  
+TimerTask 相当于 Quartz 中的 StatefulJob，多次执行时 JDK Timer 会使用相同的 TimerTask 实例。  
+Timer 的调度方式：在延迟一段时间或在指定时间点后运行一次或周期性的运行任务。
+
+    Java 有 2 种线程：用户线程（User Thread）和守护线程（Daemon Thread）。守护线程是指在程序后台  
+    运行，提供一种通用服务的线程，垃圾回收线程就是一种典型的守护线程。
+
+Spring 对 Java Timer 提供了几个支持类：
+
+- ScheduledTimerTask 对 TimerTask 提供封装并提供相关的配置，
+- MethodInvokingTimerTaskFactoryBean 类可以将一个 Bean 的方法封装为 TimerTask
+- TimerFactoryBean 可以更方便地配置 Timer，能感知 Spring 容器的生命周期，  
+  在容器启动后启动 Timer，在容器关闭前取消 Timer
+
+静态变量是 ClassLoader 级别的，如果 Web 应用程序停止，那么这些静态变量也会从 JVM 中清楚。  
+但线程是 JVM 级别的，如果用户在 Web 应用中启动了一个线程，那么这个线程的生命周期并不会和 Web  
+应用程序保持同步。
