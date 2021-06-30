@@ -1402,3 +1402,33 @@ Spring 对 Java Timer 提供了几个支持类：
 静态变量是 ClassLoader 级别的，如果 Web 应用程序停止，那么这些静态变量也会从 JVM 中清楚。  
 但线程是 JVM 级别的，如果用户在 Web 应用中启动了一个线程，那么这个线程的生命周期并不会和 Web  
 应用程序保持同步。
+
+## Spring MVC
+
+大部分 Java 应用都是 WEB 应用。
+
+DispatcherServlet 是 Spring MVC 的核心，它负责截获请求并将其分派给相应的处理器处理。  
+和任何 Servlet 一样，用户必须在 web.xml 中配置好 DispatcherServlet。
+
+Web.xml 的加载顺序是：ServletContext -> context-param -> listener -> filter -> servlet  
+contextLoaderListener 加载 spring 的配置文件 applicationContext.xml，其继承了 contextLoader  
+并且实现了 ServletContextListener.
+
+Web 容器启动时，调用 ContextLoaderListener 的 contextInitialized 方法初始化   
+WebApplicationContext：
+
+- 创建 webApplicationContext 对象
+- 从 servletContext 中获取 spring 的配置文件路径并装载配置文件，然后 refresh，创建里面的 Bean 实例
+- 将 webApplicationContext 对象注入到 servletContext 中去
+- 至此创建出了一个 IOC 容器并且将 spring 配置的 Bean 加载到了其中，
+
+- DispatcherServlet 如何截取特定的 URL 请求？  
+  配置 DispatcherServlet 的 servlet-mapping 属性
+- 位于 Web 层的 Spring 容器（WebApplicationContext）如何与位于业务层的 Spring 容器  
+  （ApplicationContext）建立关联，以使 Web 层的 Bean 可以调用业务层的 Bean？  
+  多个 Spring 容器之间可设置父子级的关系，子级容器可访问父级容器
+- 如何初始化 Spring MVC 的各个组件，并将它们装配到 DispatcherServlet 中？  
+  DispatcherServlet 初始化后执行 initStrategies() 初始化 MVC 各个组件
+
+本地化解析（多语言），AcceptHeaderLocaleResolver, CookieLocaleResolver, SessionLocaleResolver,  
+LocaleChangeInterceptor.

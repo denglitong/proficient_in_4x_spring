@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <!--扫描类包初始化被注解的 Bean-->
+    <context:component-scan base-package="com.denglitong"/>
+    <!--当使用 RestController 开发时，Spring MVC 仅需这 2 行即可-->
+    <mvc:annotation-driven conversion-service="conversionService"/>
+
+    <!--配置 org.springframework.web.servlet.resource.DefaultServletHttpRequestHandler
+        1.充当请求检查员，将静态资源请求交由 web 容器处理，其他请求交由 DispatcherServlet 处理-->
+    <!--<mvc:default-servlet-handler/>-->
+    <!--2.配置静态资源目录，由 SpringMVC 框架自己处理静态资源-->
+    <mvc:resources mapping="/resources/**" location="/public"/>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+          p:prefix="/WEB-INF/views/"
+          p:suffix=".jsp"/>
+
+    <!--The DispatcherServlet configuration needs to include a HandlerAdapter that supports this handler
+        当自定义 RequestMappingHandlerAdapter 时这个 Bean 不可少，可解决上面的报错-->
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"/>
+
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"
+          p:messageConverters-ref="messageConverters"/>
+
+    <util:list id="messageConverters">
+        <bean class="org.springframework.http.converter.BufferedImageHttpMessageConverter"/>
+        <bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter"/>
+        <bean class="org.springframework.http.converter.StringHttpMessageConverter"/>
+        <bean class="org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter"/>
+
+        <bean class="org.springframework.http.converter.xml.MarshallingHttpMessageConverter"
+              p:marshaller-ref="xmlMarshaller"
+              p:unmarshaller-ref="xmlMarshaller"/>
+
+        <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
+    </util:list>
+
+    <!--声明 Marshaller，使用 XStream 技术（使用内存少，响应速度快）-->
+    <bean id="xmlMarshaller" class="org.springframework.oxm.xstream.XStreamMarshaller">
+        <property name="streamDriver">
+            <bean class="com.thoughtworks.xstream.io.xml.StaxDriver"/>
+        </property>
+        <property name="annotatedClasses">
+            <list>
+                <value>com.denglitong.domain.User</value>
+            </list>
+        </property>
+    </bean>
+
+    <!--ConversionServiceFactoryBean 内置了很多转换器-->
+    <bean id="conversionService"
+          class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <!--可自定义 converters-->
+        <property name="converters">
+            <list>
+                <bean class="com.denglitong.converter.StringToUserConverter"/>
+            </list>
+        </property>
+    </bean>
+
+    <!--<bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean"/>-->
+
+    <!--配置 FreeMarker-->
+    <bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer"
+          p:templateLoaderPath="/WEB-INF/ftl"
+          p:defaultEncoding="UTF-8">
+        <property name="freemarkerSettings">
+            <props>
+                <prop key="classic_compatible">true</prop>
+            </props>
+        </property>
+    </bean>
+    <bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver"
+          p:order="5"
+          p:suffix=".ftl"
+          p:contentType="text/html;charset=utf-8"/>
+
+    <!--BeanNameViewResolver可对返回的视图对象为Bean 的视图进行解析-->
+    <bean class="org.springframework.web.servlet.view.BeanNameViewResolver"
+          p:order="10"/>
+
+    <!--配置 JSON 转换器,modelKeys 指定哪些属性需要输出，这里是 id 即为 controller 返回的视图名，
+        表示该视图为 MappingJackson2JsonView 视图；
+        MappingJackson2JsonView 返回的视图对象为 Bean，将使用 BeanNameViewResolver 解析-->
+    <bean id="userListJson"
+          class="org.springframework.web.servlet.view.json.MappingJackson2JsonView"
+          p:modelKeys="userList"/>
+
+    <!--<bean id="localeResolver"
+          class="org.springframework.web.servlet.i18n.CookieLocaleResolver"
+          p:cookieName="clientLanguage"
+          p:cookieMaxAge="100000"
+          p:cookiePath="/"
+          p:defaultLocale="zh_CN"/>-->
+    <!--<bean id="localeResolver"
+          class="org.springframework.web.servlet.i18n.SessionLocaleResolver"/>-->
+
+    <!-- http://xxx?locale=zh_CN
+        LocaleChangeInterceptor 从请求参数中默认拦截 locale 参数并设置给真正的本地化解析器
+        在 LocaleChangeInterceptor 之前必须定义 CookieLocaleResolver或SessionLocaleResolver-->
+    <!--<mvc:interceptors>
+        <bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor"/>
+    </mvc:interceptors>-->
+
+    <!--文件上传，配置 MultipartResolver-->
+    <bean id="multipartResolver"
+          class="org.springframework.web.multipart.commons.CommonsMultipartResolver"
+          p:defaultEncoding="UTF-8"
+          p:maxUploadSize="5242880"
+          p:uploadTempDir="upload/temp/"/>
+
+    <!--装配拦截器-->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/user/interceptor/**"/>
+            <bean class="com.denglitong.interceptor.MyInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+</beans>

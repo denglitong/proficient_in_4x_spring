@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.0"
+         xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+	     http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
+
+    <!--Web 容器（WebApplicationContext）用 web.xml 配置-->
+
+    <context-param>
+        <!--指定业务层 Spring 容器（ApplicationContext）的配置文件（多个用逗号分隔）-->
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:applicationContext.xml</param-value>
+    </context-param>
+
+    <!--contextLoaderListener 负责加载 Spring 的配置文件 applicationContext.xml-->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+    <listener>
+        <!--RequestContextHolder 工具类需要配置 RequestContextListener-->
+        <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+    </listener>
+
+    <!--<filter>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+        <async-supported>true</async-supported>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/*</url-pattern>
+        <dispatcher>REQUEST</dispatcher>
+        <dispatcher>ASYNC</dispatcher>
+    </filter-mapping>-->
+
+    <!--声明 DispatcherServlet及路由映射-->
+    <servlet>
+        <!--默认加载/WEB-INF/<servlet-name>-servlet.xml 的 Spring 配置文件，启动 WebApplicationContext-->
+        <servlet-name>default</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+        <!--<async-supported>true</async-supported>-->
+        <!--可覆盖默认约定配置-->
+        <!--<init-param>
+            <param-name></param-name>
+            <param-value></param-value>
+        </init-param>-->
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>default</servlet-name>
+        <url-pattern>/mvc/*</url-pattern>
+    </servlet-mapping>
+
+</web-app>
