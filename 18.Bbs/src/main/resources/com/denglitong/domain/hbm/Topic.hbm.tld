@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="com.denglitong.domain.Topic" table="t_topic">
+        <id name="topicId" column="topic_id">
+            <generator class="identity"/>
+        </id>
+        <property name="topicTitle" column="topic_title"/>
+        <property name="crateTime" column="create_time" type="date"/>
+        <property name="lastPost" column="last_post" type="date"/>
+        <property name="topicViews" column="topic_views"/>
+        <property name="topicReplies" column="topic_replies"/>
+        <property name="digest" column="digest"/>
+        <property name="boardId" column="board_id"/>
+        <many-to-one name="user" column="user_id" class="com.denglitong.domain.User"/>
+        <one-to-one name="mainPost" cascade="none" class="com.denglitong.domain.MainPost"/>
+    </class>
+</hibernate-mapping>

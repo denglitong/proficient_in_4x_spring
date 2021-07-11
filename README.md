@@ -1432,3 +1432,13 @@ WebApplicationContext：
 
 本地化解析（多语言），AcceptHeaderLocaleResolver, CookieLocaleResolver, SessionLocaleResolver,  
 LocaleChangeInterceptor.
+
+## 实战案例开发
+
+### 使用 Hibernate 二级缓存
+
+Hibernate 一级缓存默认开启且无法取消，一级缓存由 Session 实现。  
+Hibernate 二级缓存默认关闭，二级缓存使用插件的方式实现。合理使用二级缓存可有效减少对数据库的访问次数。
+
+单元测试的重要特性之一是可重复性。不可重复的单元测试是没有价值的。  
+DbUnit/Unitils 等测试框架可解决 DAO 层测试用例的数据还原问题。
